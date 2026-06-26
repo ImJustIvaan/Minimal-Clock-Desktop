@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv /Users/ivaan/Documents/minimal_clock_desktop/* /Users/ivaan/Documents/Minimal_Clock_Desktop/)",
+      "Bash(mv /Users/ivaan/Documents/minimal_clock_desktop/.* /Users/ivaan/Documents/Minimal_Clock_Desktop/)",
+      "Bash(rmdir /Users/ivaan/Documents/minimal_clock_desktop)"
+    ]
+  }
+}

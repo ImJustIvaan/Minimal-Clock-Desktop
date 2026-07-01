@@ -10,6 +10,7 @@ class AppSettings {
   // Empty string means local device timezone
   final String selectedTimezone;
   final bool analogMode;
+  final bool fillDisplay;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
@@ -20,6 +21,7 @@ class AppSettings {
     this.clockFontSize = 72,
     this.selectedTimezone = '',
     this.analogMode = false,
+    this.fillDisplay = false,
   });
 
   AppSettings copyWith({
@@ -31,6 +33,7 @@ class AppSettings {
     double? clockFontSize,
     String? selectedTimezone,
     bool? analogMode,
+    bool? fillDisplay,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -41,6 +44,7 @@ class AppSettings {
       clockFontSize: clockFontSize ?? this.clockFontSize,
       selectedTimezone: selectedTimezone ?? this.selectedTimezone,
       analogMode: analogMode ?? this.analogMode,
+      fillDisplay: fillDisplay ?? this.fillDisplay,
     );
   }
 
@@ -53,6 +57,7 @@ class AppSettings {
         'clockFontSize': clockFontSize,
         'selectedTimezone': selectedTimezone,
         'analogMode': analogMode,
+        'fillDisplay': fillDisplay,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -64,5 +69,6 @@ class AppSettings {
         clockFontSize: (json['clockFontSize'] as num?)?.toDouble() ?? 72,
         selectedTimezone: json['selectedTimezone'] as String? ?? '',
         analogMode: json['analogMode'] as bool? ?? false,
+        fillDisplay: json['fillDisplay'] as bool? ?? false,
       );
 }

@@ -1,7 +1,7 @@
 [Setup]
 AppName=Minimal Clock
 AppVersion=1.0.0
-AppPublisher=Ivaan
+AppPublisher=ImJustIvaan
 AppPublisherURL=https://github.com/ImJustIvaan/Minimal-Clock-Desktop
 DefaultDirName={autopf}\Minimal Clock
 DefaultGroupName=Minimal Clock

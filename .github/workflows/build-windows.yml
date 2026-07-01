@@ -26,19 +26,28 @@ jobs:
         run: choco install innosetup --yes --no-progress
 
       - name: Build installer
+        shell: pwsh
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) {
+            Write-Error "ISCC.exe not found at $iscc"
+            exit 1
+          }
+          Write-Host "Running: $iscc installer.iss"
           & $iscc installer.iss
-        shell: pwsh
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "ISCC failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
 
       - name: Verify installer exists
+        shell: pwsh
         run: |
           if (!(Test-Path "MinimalClockSetup.exe")) {
             Write-Error "MinimalClockSetup.exe was not created!"
             exit 1
           }
           Write-Host "Installer size: $((Get-Item MinimalClockSetup.exe).Length) bytes"
-        shell: pwsh
 
       - uses: actions/upload-artifact@v4
         with:

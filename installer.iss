@@ -5,6 +5,7 @@ AppPublisher=ImJustIvaan
 AppPublisherURL=https://github.com/ImJustIvaan/Minimal-Clock-Desktop
 DefaultDirName={autopf}\Minimal Clock
 DefaultGroupName=Minimal Clock
+OutputDir=.
 OutputBaseFilename=MinimalClockSetup
 Compression=lzma
 SolidCompression=yes

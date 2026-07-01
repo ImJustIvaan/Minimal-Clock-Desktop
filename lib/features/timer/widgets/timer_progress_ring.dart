@@ -5,8 +5,14 @@ import '../../../core/providers/timer_provider.dart';
 class TimerProgressRing extends StatelessWidget {
   final TimerState state;
   final Color color;
+  final double fontSize;
 
-  const TimerProgressRing({super.key, required this.state, required this.color});
+  const TimerProgressRing({
+    super.key,
+    required this.state,
+    required this.color,
+    this.fontSize = 72,
+  });
 
   String _format(Duration d) {
     final h = d.inHours.toString().padLeft(2, '0');
@@ -18,39 +24,37 @@ class TimerProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFinished = state.status == TimerStatus.finished;
+    // Ring is sized relative to font size
+    final ringSize = (fontSize * 4.0).clamp(200.0, 600.0);
+
     return SizedBox(
-      width: 260,
-      height: 260,
+      width: ringSize,
+      height: ringSize,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CustomPaint(
-            size: const Size(260, 260),
+            size: Size(ringSize, ringSize),
             painter: _RingPainter(
               progress: state.progress,
               color: color,
               finished: isFinished,
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Text(
-                  isFinished ? 'Timer\nFinished' : _format(state.remaining),
-                  key: ValueKey(isFinished ? 'fin' : state.remaining.inSeconds),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: isFinished ? 28 : 48,
-                    fontWeight: FontWeight.w200,
-                    color: color,
-                    letterSpacing: -1,
-                    height: 1.2,
-                  ),
-                ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text(
+              isFinished ? 'Timer\nFinished' : _format(state.remaining),
+              key: ValueKey(isFinished ? 'fin' : state.remaining.inSeconds),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isFinished ? fontSize * 0.4 : fontSize,
+                fontWeight: FontWeight.w200,
+                color: color,
+                letterSpacing: -2,
+                height: 1.2,
               ),
-            ],
+            ),
           ),
         ],
       ),

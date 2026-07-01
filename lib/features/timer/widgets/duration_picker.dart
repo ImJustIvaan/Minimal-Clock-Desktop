@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class DurationPicker extends StatefulWidget {
   final Duration initial;
   final ValueChanged<Duration> onChanged;
+  final double fontSize;
 
   const DurationPicker({
     super.key,
     required this.initial,
     required this.onChanged,
+    this.fontSize = 72,
   });
 
   @override
@@ -34,39 +36,41 @@ class _DurationPickerState extends State<DurationPicker> {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.onSurface;
+    final fs = widget.fontSize;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'SET TIMER',
-          style: TextStyle(
-            fontSize: 11,
-            letterSpacing: 4,
-            color: color.withValues(alpha: 0.3),
-          ),
+          style: TextStyle(fontSize: 11, letterSpacing: 4, color: color.withValues(alpha: 0.3)),
         ),
         const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _Scroll(
+            _Spinner(
               label: 'HH',
               value: _hours,
               max: 23,
+              fontSize: fs,
               onChanged: (v) { setState(() => _hours = v); _notify(); },
             ),
-            _Sep(color: color),
-            _Scroll(
+            _Sep(color: color, fontSize: fs),
+            _Spinner(
               label: 'MM',
               value: _minutes,
               max: 59,
+              fontSize: fs,
               onChanged: (v) { setState(() => _minutes = v); _notify(); },
             ),
-            _Sep(color: color),
-            _Scroll(
+            _Sep(color: color, fontSize: fs),
+            _Spinner(
               label: 'SS',
               value: _seconds,
               max: 59,
+              fontSize: fs,
               onChanged: (v) { setState(() => _seconds = v); _notify(); },
             ),
           ],
@@ -78,99 +82,86 @@ class _DurationPickerState extends State<DurationPicker> {
 
 class _Sep extends StatelessWidget {
   final Color color;
-  const _Sep({required this.color});
+  final double fontSize;
+  const _Sep({required this.color, required this.fontSize});
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Text(
-          ':',
-          style: TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.w200,
-            color: color.withValues(alpha: 0.3),
-          ),
+  Widget build(BuildContext context) => Text(
+        ':',
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w200,
+          color: color.withValues(alpha: 0.3),
         ),
       );
 }
 
-class _Scroll extends StatefulWidget {
+class _Spinner extends StatelessWidget {
   final String label;
   final int value;
   final int max;
+  final double fontSize;
   final ValueChanged<int> onChanged;
 
-  const _Scroll({
+  const _Spinner({
     required this.label,
     required this.value,
     required this.max,
+    required this.fontSize,
     required this.onChanged,
   });
 
-  @override
-  State<_Scroll> createState() => _ScrollState();
-}
-
-class _ScrollState extends State<_Scroll> {
-  late FixedExtentScrollController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = FixedExtentScrollController(initialItem: widget.value);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void _increment() => onChanged((value + 1) > max ? 0 : value + 1);
+  void _decrement() => onChanged((value - 1) < 0 ? max : value - 1);
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.onSurface;
+    final btnSize = (fontSize * 0.35).clamp(20.0, 36.0);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: 72,
-          height: 140,
-          child: ListWheelScrollView.useDelegate(
-            controller: _ctrl,
-            itemExtent: 56,
-            physics: const FixedExtentScrollPhysics(),
-            perspective: 0.003,
-            onSelectedItemChanged: widget.onChanged,
-            childDelegate: ListWheelChildBuilderDelegate(
-              builder: (context, index) {
-                final v = index % (widget.max + 1);
-                final selected = v == widget.value;
-                return Center(
-                  child: Text(
-                    v.toString().padLeft(2, '0'),
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w200,
-                      color: selected ? color : color.withValues(alpha: 0.18),
-                      letterSpacing: -1,
-                    ),
-                  ),
-                );
-              },
-              childCount: (widget.max + 1) * 100,
+        _ArrowBtn(icon: Icons.keyboard_arrow_up_rounded, size: btnSize, color: color, onTap: _increment),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onVerticalDragUpdate: (d) {
+            if (d.delta.dy < -5) _increment();
+            if (d.delta.dy > 5) _decrement();
+          },
+          child: Text(
+            value.toString().padLeft(2, '0'),
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w200,
+              color: color,
+              letterSpacing: -2,
+              height: 1,
             ),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          widget.label,
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: 2,
-            color: color.withValues(alpha: 0.25),
-          ),
-        ),
+        const SizedBox(height: 4),
+        _ArrowBtn(icon: Icons.keyboard_arrow_down_rounded, size: btnSize, color: color, onTap: _decrement),
+        const SizedBox(height: 8),
+        Text(label, style: TextStyle(fontSize: 10, letterSpacing: 2, color: color.withValues(alpha: 0.25))),
       ],
+    );
+  }
+}
+
+class _ArrowBtn extends StatelessWidget {
+  final IconData icon;
+  final double size;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ArrowBtn({required this.icon, required this.size, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Icon(icon, size: size, color: color.withValues(alpha: 0.3)),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/providers/countdown_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/services/notification_service.dart';
 import 'widgets/countdown_tile.dart';
 
@@ -113,25 +114,34 @@ class _CountdownDetailScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    countdown.title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w400,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    formatRemaining(remaining),
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w200,
-                      letterSpacing: -1,
-                      color: color,
-                    ),
-                  ),
+                  Builder(builder: (context) {
+                    final fontSize = ref.watch(settingsProvider).valueOrNull?.clockFontSize ?? 72;
+                    return Column(
+                      children: [
+                        Text(
+                          countdown.title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: (fontSize * 0.3).clamp(18.0, 32.0),
+                            fontWeight: FontWeight.w400,
+                            color: color.withValues(alpha: 0.7),
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          formatRemaining(remaining),
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.w200,
+                            letterSpacing: -2,
+                            color: color,
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
                   const SizedBox(height: 8),
                   Text(
                     '${countdown.targetDate.month}/${countdown.targetDate.day}/${countdown.targetDate.year}',

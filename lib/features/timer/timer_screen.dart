@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/providers/timer_provider.dart';
 import 'widgets/duration_picker.dart';
 import 'widgets/timer_progress_ring.dart';
@@ -12,6 +13,7 @@ class TimerScreen extends ConsumerWidget {
     final state = ref.watch(timerProvider);
     final notifier = ref.read(timerProvider.notifier);
     final color = Theme.of(context).colorScheme.onSurface;
+    final fontSize = ref.watch(settingsProvider).valueOrNull?.clockFontSize ?? 72;
 
     return Scaffold(
       body: Padding(
@@ -26,15 +28,17 @@ class TimerScreen extends ConsumerWidget {
                       key: const ValueKey('picker'),
                       onChanged: (d) => notifier.setDuration(d),
                       initial: state.total,
+                      fontSize: fontSize,
                     )
                   : TimerProgressRing(
                       key: const ValueKey('ring'),
                       state: state,
                       color: color,
+                      fontSize: fontSize,
                     ),
             ),
             const Spacer(flex: 2),
-            _Controls(state: state, notifier: notifier),
+            _Controls(state: state, notifier: notifier, color: color),
             const SizedBox(height: 48),
           ],
         ),
@@ -46,13 +50,12 @@ class TimerScreen extends ConsumerWidget {
 class _Controls extends StatelessWidget {
   final TimerState state;
   final TimerNotifier notifier;
+  final Color color;
 
-  const _Controls({required this.state, required this.notifier});
+  const _Controls({required this.state, required this.notifier, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurface;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -78,27 +81,19 @@ class _Controls extends StatelessWidget {
 
   IconData _primaryIcon(TimerStatus s) {
     switch (s) {
-      case TimerStatus.running:
-        return Icons.pause_rounded;
-      case TimerStatus.paused:
-        return Icons.play_arrow_rounded;
-      case TimerStatus.finished:
-        return Icons.refresh_rounded;
-      case TimerStatus.idle:
-        return Icons.play_arrow_rounded;
+      case TimerStatus.running:  return Icons.pause_rounded;
+      case TimerStatus.paused:   return Icons.play_arrow_rounded;
+      case TimerStatus.finished: return Icons.refresh_rounded;
+      case TimerStatus.idle:     return Icons.play_arrow_rounded;
     }
   }
 
   void _primaryAction(TimerStatus s, TimerNotifier n) {
     switch (s) {
-      case TimerStatus.idle:
-        n.start();
-      case TimerStatus.running:
-        n.pause();
-      case TimerStatus.paused:
-        n.resume();
-      case TimerStatus.finished:
-        n.reset();
+      case TimerStatus.idle:     n.start();
+      case TimerStatus.running:  n.pause();
+      case TimerStatus.paused:   n.resume();
+      case TimerStatus.finished: n.reset();
     }
   }
 }

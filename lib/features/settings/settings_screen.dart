@@ -68,6 +68,11 @@ class _SettingsBody extends ConsumerWidget {
               ]),
               _Section(label: 'CLOCK', children: [
                 _SwitchRow(
+                  label: 'Analog mode',
+                  value: settings.analogMode,
+                  onChanged: (v) => update(settings.copyWith(analogMode: v)),
+                ),
+                _SwitchRow(
                   label: '24-hour format',
                   value: settings.use24Hour,
                   onChanged: (v) => update(settings.copyWith(use24Hour: v)),
@@ -91,7 +96,7 @@ class _SettingsBody extends ConsumerWidget {
                   label: 'Clock size',
                   value: settings.clockFontSize,
                   min: 48,
-                  max: 160,
+                  max: 240,
                   onChanged: (v) => update(settings.copyWith(clockFontSize: v)),
                 ),
               ]),

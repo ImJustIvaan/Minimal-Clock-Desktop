@@ -22,10 +22,23 @@ jobs:
       - name: Build Windows release
         run: flutter build windows --release
 
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
       - name: Build installer
         run: |
-          choco install innosetup --yes
-          iscc installer.iss
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          & $iscc installer.iss
+        shell: pwsh
+
+      - name: Verify installer exists
+        run: |
+          if (!(Test-Path "MinimalClockSetup.exe")) {
+            Write-Error "MinimalClockSetup.exe was not created!"
+            exit 1
+          }
+          Write-Host "Installer size: $((Get-Item MinimalClockSetup.exe).Length) bytes"
+        shell: pwsh
 
       - uses: actions/upload-artifact@v4
         with:

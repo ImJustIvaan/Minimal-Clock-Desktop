@@ -75,12 +75,31 @@ class _AppShellState extends State<AppShell> {
           ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: KeyedSubtree(
-                key: ValueKey(_index),
-                child: _screens[_index],
-              ),
+            child: Stack(
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: KeyedSubtree(
+                    key: ValueKey(_index),
+                    child: _screens[_index],
+                  ),
+                ),
+                // Only show watermark on Clock, Timer, Countdowns (not Settings)
+                if (_index != 3)
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: Text(
+                      'Minimal Clock by Ivaan',
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1,
+                        color: color.withValues(alpha: 0.18),
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

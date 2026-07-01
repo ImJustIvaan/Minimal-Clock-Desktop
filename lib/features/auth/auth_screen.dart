@@ -76,24 +76,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-      _info = null;
-    });
-    try {
-      await SupabaseService.client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'io.minimalclock.app://login-callback',
-      );
-    } catch (e) {
-      setState(() => _error = 'Google sign-in failed.');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.onSurface;
@@ -187,28 +169,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       style: TextStyle(color: color.withValues(alpha: 0.5), fontSize: 13),
                     ),
                   ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: color.withValues(alpha: 0.12))),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('OR', style: TextStyle(color: color.withValues(alpha: 0.3), fontSize: 11)),
-                    ),
-                    Expanded(child: Divider(color: color.withValues(alpha: 0.12))),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                OutlinedButton(
-                  onPressed: _loading ? null : _signInWithGoogle,
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: color.withValues(alpha: 0.2)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text('Continue with Google', style: TextStyle(color: color)),
+                const SizedBox(height: 16),
+                Text(
+                  'Sign in with Google is currently not available on desktop.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: color.withValues(alpha: 0.3), fontSize: 12),
                 ),
               ],
             ),

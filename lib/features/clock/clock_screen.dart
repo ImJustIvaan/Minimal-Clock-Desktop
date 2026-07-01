@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 import '../../core/providers/settings_provider.dart';
 import 'widgets/animated_digit.dart';
 
@@ -15,10 +17,13 @@ class ClockScreen extends ConsumerStatefulWidget {
 class _ClockScreenState extends ConsumerState<ClockScreen> {
   late Timer _timer;
   DateTime _now = DateTime.now();
+  bool _tzInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    tz_data.initializeTimeZones();
+    _tzInitialized = true;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -30,6 +35,19 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     super.dispose();
   }
 
+  DateTime _localizedNow(String tzId) {
+    if (!_tzInitialized || tzId.isEmpty) return _now;
+    try {
+      final location = tz.getLocation(tzId);
+      final tzNow = tz.TZDateTime.now(location);
+      // Return a plain DateTime so DateFormat works normally
+      return DateTime(tzNow.year, tzNow.month, tzNow.day,
+          tzNow.hour, tzNow.minute, tzNow.second);
+    } catch (_) {
+      return _now;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
@@ -37,13 +55,15 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (settings) {
+        final displayNow = _localizedNow(settings.selectedTimezone);
+
         final timeFormat = settings.use24Hour
             ? (settings.showSeconds ? 'HH:mm:ss' : 'HH:mm')
             : (settings.showSeconds ? 'hh:mm:ss' : 'hh:mm');
-        final timeStr = DateFormat(timeFormat).format(_now);
-        final amPm = settings.use24Hour ? '' : DateFormat('a').format(_now);
-        final dateStr = DateFormat('MMMM d, yyyy').format(_now);
-        final weekdayStr = DateFormat('EEEE').format(_now);
+        final timeStr = DateFormat(timeFormat).format(displayNow);
+        final amPm = settings.use24Hour ? '' : DateFormat('a').format(displayNow);
+        final dateStr = DateFormat('MMMM d, yyyy').format(displayNow);
+        final weekdayStr = DateFormat('EEEE').format(displayNow);
 
         final color = Theme.of(context).colorScheme.onSurface;
         final fontSize = settings.clockFontSize;
@@ -55,6 +75,17 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (settings.selectedTimezone.isNotEmpty) ...[
+                    Text(
+                      settings.selectedTimezone.replaceAll('_', ' '),
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 3,
+                        color: color.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
                   if (settings.showWeekday) ...[
                     Text(
                       weekdayStr.toUpperCase(),

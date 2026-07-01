@@ -7,6 +7,8 @@ class AppSettings {
   final bool showDate;
   final bool showWeekday;
   final double clockFontSize;
+  // Empty string means local device timezone
+  final String selectedTimezone;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
@@ -15,6 +17,7 @@ class AppSettings {
     this.showDate = true,
     this.showWeekday = true,
     this.clockFontSize = 72,
+    this.selectedTimezone = '',
   });
 
   AppSettings copyWith({
@@ -24,6 +27,7 @@ class AppSettings {
     bool? showDate,
     bool? showWeekday,
     double? clockFontSize,
+    String? selectedTimezone,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -32,6 +36,7 @@ class AppSettings {
       showDate: showDate ?? this.showDate,
       showWeekday: showWeekday ?? this.showWeekday,
       clockFontSize: clockFontSize ?? this.clockFontSize,
+      selectedTimezone: selectedTimezone ?? this.selectedTimezone,
     );
   }
 
@@ -42,6 +47,7 @@ class AppSettings {
         'showDate': showDate,
         'showWeekday': showWeekday,
         'clockFontSize': clockFontSize,
+        'selectedTimezone': selectedTimezone,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -51,5 +57,6 @@ class AppSettings {
         showDate: json['showDate'] as bool? ?? true,
         showWeekday: json['showWeekday'] as bool? ?? true,
         clockFontSize: (json['clockFontSize'] as num?)?.toDouble() ?? 72,
+        selectedTimezone: json['selectedTimezone'] as String? ?? '',
       );
 }

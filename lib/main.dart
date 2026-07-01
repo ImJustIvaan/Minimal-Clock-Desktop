@@ -4,6 +4,7 @@ import 'package:window_manager/window_manager.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/supabase_service.dart';
 import 'shared/widgets/app_shell.dart';
 
 void main() async {
@@ -15,6 +16,7 @@ void main() async {
   await windowManager.setTitle('Minimal Clock');
   await windowManager.center();
 
+  await SupabaseService.init();
   await NotificationService.instance.init();
 
   runApp(const ProviderScope(child: MinimalClockApp()));

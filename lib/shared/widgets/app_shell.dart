@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/clock/clock_screen.dart';
 import '../../features/timer/timer_screen.dart';
+import '../../features/countdowns/countdowns_screen.dart';
 import '../../features/settings/settings_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -16,6 +17,7 @@ class _AppShellState extends State<AppShell> {
   static const _screens = [
     ClockScreen(),
     TimerScreen(),
+    CountdownsScreen(),
     SettingsScreen(),
   ];
 
@@ -57,6 +59,11 @@ class _AppShellState extends State<AppShell> {
                   icon: Icon(Icons.timer_outlined),
                   selectedIcon: Icon(Icons.timer),
                   label: Text('Timer'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  selectedIcon: Icon(Icons.calendar_month),
+                  label: Text('Countdowns'),
                 ),
                 NavigationRailDestination(
                   icon: Icon(Icons.tune_outlined),

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Minimal Clock (macOS debug)",
+      "runtimeExecutable": "/Users/ivaan/Documents/FLUTTER/flutter/bin/flutter",
+      "runtimeArgs": ["run", "-d", "macos"],
+      "port": 8080
+    },
+    {
+      "name": "Minimal Clock (macOS release)",
+      "runtimeExecutable": "/Users/ivaan/Documents/FLUTTER/flutter/bin/flutter",
+      "runtimeArgs": ["build", "macos", "--release"],
+      "port": 8080
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../../core/providers/settings_provider.dart';
 import 'widgets/animated_digit.dart';
+import 'widgets/analog_clock.dart';
 
 class ClockScreen extends ConsumerStatefulWidget {
   const ClockScreen({super.key});
@@ -40,7 +41,6 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     try {
       final location = tz.getLocation(tzId);
       final tzNow = tz.TZDateTime.now(location);
-      // Return a plain DateTime so DateFormat works normally
       return DateTime(tzNow.year, tzNow.month, tzNow.day,
           tzNow.hour, tzNow.minute, tzNow.second);
     } catch (_) {
@@ -56,92 +56,117 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
       error: (_, __) => const SizedBox.shrink(),
       data: (settings) {
         final displayNow = _localizedNow(settings.selectedTimezone);
-
-        final timeFormat = settings.use24Hour
-            ? (settings.showSeconds ? 'HH:mm:ss' : 'HH:mm')
-            : (settings.showSeconds ? 'hh:mm:ss' : 'hh:mm');
-        final timeStr = DateFormat(timeFormat).format(displayNow);
-        final amPm = settings.use24Hour ? '' : DateFormat('a').format(displayNow);
-        final dateStr = DateFormat('MMMM d, yyyy').format(displayNow);
-        final weekdayStr = DateFormat('EEEE').format(displayNow);
-
         final color = Theme.of(context).colorScheme.onSurface;
-        final fontSize = settings.clockFontSize;
 
         return Scaffold(
           body: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (settings.selectedTimezone.isNotEmpty) ...[
-                    Text(
-                      settings.selectedTimezone.replaceAll('_', ' '),
-                      style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 3,
-                        color: color.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                  ],
-                  if (settings.showWeekday) ...[
-                    Text(
-                      weekdayStr.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 13,
-                        letterSpacing: 4,
-                        color: color.withValues(alpha: 0.4),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      AnimatedClockText(
-                        text: timeStr,
-                        fontSize: fontSize,
-                        color: color,
-                      ),
-                      if (!settings.use24Hour && amPm.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Padding(
-                          padding: EdgeInsets.only(bottom: fontSize * 0.08),
-                          child: Text(
-                            amPm,
-                            style: TextStyle(
-                              fontSize: fontSize * 0.22,
-                              color: color.withValues(alpha: 0.5),
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (settings.showDate) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      dateStr,
-                      style: TextStyle(
-                        fontSize: 16,
-                        letterSpacing: 1,
-                        color: color.withValues(alpha: 0.45),
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            child: settings.analogMode
+                ? _buildAnalog(displayNow, settings, color)
+                : _buildDigital(displayNow, settings, color),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAnalog(DateTime now, dynamic settings, Color color) {
+    final dateStr = DateFormat('MMMM d, yyyy').format(now);
+    final weekdayStr = DateFormat('EEEE').format(now);
+    final clockSize = (settings.clockFontSize as double) * 2.8;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (settings.selectedTimezone.isNotEmpty) ...[
+          Text(
+            (settings.selectedTimezone as String).replaceAll('_', ' '),
+            style: TextStyle(fontSize: 11, letterSpacing: 3, color: color.withValues(alpha: 0.3)),
+          ),
+          const SizedBox(height: 4),
+        ],
+        AnalogClock(
+          time: now,
+          color: color,
+          showSeconds: settings.showSeconds as bool,
+          size: clockSize.clamp(200.0, 500.0),
+        ),
+        if (settings.showWeekday || settings.showDate) const SizedBox(height: 28),
+        if (settings.showWeekday)
+          Text(
+            weekdayStr.toUpperCase(),
+            style: TextStyle(fontSize: 13, letterSpacing: 4, color: color.withValues(alpha: 0.4), fontWeight: FontWeight.w400),
+          ),
+        if (settings.showDate) ...[
+          const SizedBox(height: 6),
+          Text(
+            dateStr,
+            style: TextStyle(fontSize: 16, letterSpacing: 1, color: color.withValues(alpha: 0.45), fontWeight: FontWeight.w300),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDigital(DateTime now, dynamic settings, Color color) {
+    final timeFormat = settings.use24Hour
+        ? (settings.showSeconds ? 'HH:mm:ss' : 'HH:mm')
+        : (settings.showSeconds ? 'hh:mm:ss' : 'hh:mm');
+    final timeStr = DateFormat(timeFormat).format(now);
+    final amPm = settings.use24Hour ? '' : DateFormat('a').format(now);
+    final dateStr = DateFormat('MMMM d, yyyy').format(now);
+    final weekdayStr = DateFormat('EEEE').format(now);
+    final fontSize = settings.clockFontSize as double;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (settings.selectedTimezone.isNotEmpty) ...[
+            Text(
+              (settings.selectedTimezone as String).replaceAll('_', ' '),
+              style: TextStyle(fontSize: 11, letterSpacing: 3, color: color.withValues(alpha: 0.3)),
+            ),
+            const SizedBox(height: 4),
+          ],
+          if (settings.showWeekday) ...[
+            Text(
+              weekdayStr.toUpperCase(),
+              style: TextStyle(fontSize: 13, letterSpacing: 4, color: color.withValues(alpha: 0.4), fontWeight: FontWeight.w400),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              AnimatedClockText(text: timeStr, fontSize: fontSize, color: color),
+              if (!settings.use24Hour && amPm.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Padding(
+                  padding: EdgeInsets.only(bottom: fontSize * 0.08),
+                  child: Text(
+                    amPm,
+                    style: TextStyle(
+                      fontSize: fontSize * 0.22,
+                      color: color.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (settings.showDate) ...[
+            const SizedBox(height: 16),
+            Text(
+              dateStr,
+              style: TextStyle(fontSize: 16, letterSpacing: 1, color: color.withValues(alpha: 0.45), fontWeight: FontWeight.w300),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

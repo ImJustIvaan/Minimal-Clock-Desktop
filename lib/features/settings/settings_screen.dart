@@ -73,6 +73,11 @@ class _SettingsBody extends ConsumerWidget {
                   onChanged: (v) => update(settings.copyWith(analogMode: v)),
                 ),
                 _SwitchRow(
+                  label: 'Fill display',
+                  value: settings.fillDisplay,
+                  onChanged: (v) => update(settings.copyWith(fillDisplay: v)),
+                ),
+                _SwitchRow(
                   label: '24-hour format',
                   value: settings.use24Hour,
                   onChanged: (v) => update(settings.copyWith(use24Hour: v)),

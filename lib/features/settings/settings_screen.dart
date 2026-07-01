@@ -105,6 +105,13 @@ class _SettingsBody extends ConsumerWidget {
                   onChanged: (v) => update(settings.copyWith(clockFontSize: v)),
                 ),
               ]),
+              _Section(label: 'NOTIFICATIONS', children: [
+                _SwitchRow(
+                  label: 'Hourly Notifier',
+                  value: settings.hourlyNotifier,
+                  onChanged: (v) => update(settings.copyWith(hourlyNotifier: v)),
+                ),
+              ]),
               const SizedBox(height: 48),
             ]),
           ),

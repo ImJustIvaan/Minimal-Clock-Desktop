@@ -11,6 +11,7 @@ class AppSettings {
   final String selectedTimezone;
   final bool analogMode;
   final bool fillDisplay;
+  final bool hourlyNotifier;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
@@ -22,6 +23,7 @@ class AppSettings {
     this.selectedTimezone = '',
     this.analogMode = false,
     this.fillDisplay = false,
+    this.hourlyNotifier = false,
   });
 
   AppSettings copyWith({
@@ -34,6 +36,7 @@ class AppSettings {
     String? selectedTimezone,
     bool? analogMode,
     bool? fillDisplay,
+    bool? hourlyNotifier,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -45,6 +48,7 @@ class AppSettings {
       selectedTimezone: selectedTimezone ?? this.selectedTimezone,
       analogMode: analogMode ?? this.analogMode,
       fillDisplay: fillDisplay ?? this.fillDisplay,
+      hourlyNotifier: hourlyNotifier ?? this.hourlyNotifier,
     );
   }
 
@@ -58,6 +62,7 @@ class AppSettings {
         'selectedTimezone': selectedTimezone,
         'analogMode': analogMode,
         'fillDisplay': fillDisplay,
+        'hourlyNotifier': hourlyNotifier,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -70,5 +75,6 @@ class AppSettings {
         selectedTimezone: json['selectedTimezone'] as String? ?? '',
         analogMode: json['analogMode'] as bool? ?? false,
         fillDisplay: json['fillDisplay'] as bool? ?? false,
+        hourlyNotifier: json['hourlyNotifier'] as bool? ?? false,
       );
 }

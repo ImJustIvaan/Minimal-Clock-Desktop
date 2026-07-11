@@ -41,18 +41,26 @@ class TimerProgressRing extends StatelessWidget {
               finished: isFinished,
             ),
           ),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Text(
-              isFinished ? 'Timer\nFinished' : _format(state.remaining),
-              key: ValueKey(isFinished ? 'fin' : state.remaining.inSeconds),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isFinished ? fontSize * 0.4 : fontSize,
-                fontWeight: FontWeight.w200,
-                color: color,
-                letterSpacing: -2,
-                height: 1.2,
+          Padding(
+            padding: EdgeInsets.all(ringSize * 0.12),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: FittedBox(
+                key: ValueKey(isFinished ? 'fin' : state.remaining.inSeconds),
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  isFinished ? 'Timer\nFinished' : _format(state.remaining),
+                  textAlign: TextAlign.center,
+                  maxLines: isFinished ? 2 : 1,
+                  softWrap: isFinished,
+                  style: TextStyle(
+                    fontSize: isFinished ? fontSize * 0.4 : fontSize,
+                    fontWeight: FontWeight.w200,
+                    color: color,
+                    letterSpacing: -2,
+                    height: 1.2,
+                  ),
+                ),
               ),
             ),
           ),

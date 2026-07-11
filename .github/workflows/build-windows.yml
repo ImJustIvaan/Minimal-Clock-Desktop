@@ -19,13 +19,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # flutter_tools picks the windows build target (x64 vs arm64) purely
+      # from the architecture of the *running* dart.exe (Abi.current()), so
+      # an emulated x64 SDK always produces an x64 build even on this arm64
+      # runner. Flutter's official release channel also has no arm64-native
+      # SDK archive, so flutter-action can't install one either. Instead,
+      # git-clone Flutter directly and let its own bootstrap script fetch
+      # the native windows-arm64 Dart SDK (which Dart does publish) when run
+      # under this runner's native arm64 PowerShell.
+      - name: Install Flutter (native arm64)
+        if: matrix.arch == 'arm64'
+        shell: pwsh
+        run: |
+          git clone --branch 3.44.4 --depth 1 https://github.com/flutter/flutter.git "$env:RUNNER_TEMP\flutter"
+          echo "$env:RUNNER_TEMP\flutter\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & "$env:RUNNER_TEMP\flutter\bin\flutter.bat" --version
+
       - uses: subosito/flutter-action@v2
+        if: matrix.arch == 'x64'
         with:
           flutter-version: '3.44.4'
           channel: stable
-          # Flutter has no arm64-native Windows SDK archive; the x64 SDK
-          # runs fine under Windows 11's x64 emulation and still detects
-          # the real host CPU to build a native windows-arm64 app.
           architecture: x64
 
       - name: Install dependencies

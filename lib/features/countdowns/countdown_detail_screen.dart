@@ -8,7 +8,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/services/notification_service.dart';
 import 'widgets/countdown_tile.dart';
 
-const String kCountdownShareBaseUrl = 'https://minimalclock.app/c';
+const String kCountdownShareBaseUrl = 'https://time.ivaan.cc/?c=';
 
 class CountdownDetailScreen extends ConsumerStatefulWidget {
   final String countdownId;
@@ -67,7 +67,7 @@ class _CountdownDetailScreenState
   }
 
   void _share(String title) {
-    final url = '$kCountdownShareBaseUrl/${widget.countdownId}';
+    final url = '$kCountdownShareBaseUrl${widget.countdownId}';
     Share.share('$title — count down with me: $url');
   }
 

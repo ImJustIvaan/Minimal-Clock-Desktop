@@ -36,6 +36,13 @@ class MinimalClockApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
+      // Clock/timer/countdown displays are custom-sized digit layouts, not
+      // scrollable text — clamp OS-level text scaling so they don't clip.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 1.0,
+        maxScaleFactor: 1.3,
+        child: child!,
+      ),
       home: const AppShell(),
     );
   }

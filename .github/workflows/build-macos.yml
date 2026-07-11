@@ -25,6 +25,9 @@ jobs:
       - name: Build macOS release (Universal)
         run: flutter build macos --release
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Create DMG
         run: |
           APP_PATH="build/macos/Build/Products/Release/Minimal Clock.app"
@@ -32,10 +35,25 @@ jobs:
             APP_PATH=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
           fi
           echo "Using app at: $APP_PATH"
-          mkdir -p dmg_root
-          cp -R "$APP_PATH" dmg_root/
-          ln -s /Applications dmg_root/Applications
-          hdiutil create -volname "Minimal Clock" -srcfolder dmg_root -ov -format UDZO MinimalClock.dmg
+          rm -f MinimalClock.dmg
+          create-dmg \
+            --volname "Minimal Clock" \
+            --volicon "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png" \
+            --window-pos 200 120 \
+            --window-size 660 400 \
+            --icon-size 128 \
+            --icon "$(basename "$APP_PATH")" 165 190 \
+            --app-drop-link 495 190 \
+            --hide-extension "$(basename "$APP_PATH")" \
+            MinimalClock.dmg \
+            "$APP_PATH" || true
+          if [ ! -f "MinimalClock.dmg" ]; then
+            echo "create-dmg failed, falling back to plain hdiutil DMG"
+            mkdir -p dmg_root
+            cp -R "$APP_PATH" dmg_root/
+            ln -s /Applications dmg_root/Applications
+            hdiutil create -volname "Minimal Clock" -srcfolder dmg_root -ov -format UDZO MinimalClock.dmg
+          fi
 
       - name: Verify DMG exists
         run: |

@@ -16,8 +16,13 @@ SetupIconFile=windows\runner\resources\app_icon.ico
 Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
-Name: "{group}\Minimal Clock"; Filename: "{app}\minimal_clock_desktop.exe"
-Name: "{commondesktop}\Minimal Clock"; Filename: "{app}\minimal_clock_desktop.exe"
+Name: "{group}\Minimal Clock"; Filename: "{app}\minimal_clock.exe"
+Name: "{commondesktop}\Minimal Clock"; Filename: "{app}\minimal_clock.exe"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\minimalclock"; ValueType: string; ValueName: ""; ValueData: "URL:Minimal Clock Protocol"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\minimalclock"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCU; Subkey: "Software\Classes\minimalclock\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\minimal_clock.exe"" ""%1"""
 
 [Run]
-Filename: "{app}\minimal_clock_desktop.exe"; Description: "Launch Minimal Clock"; Flags: postinstall nowait
+Filename: "{app}\minimal_clock.exe"; Description: "Launch Minimal Clock"; Flags: postinstall nowait

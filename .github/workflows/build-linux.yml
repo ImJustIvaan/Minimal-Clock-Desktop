@@ -66,9 +66,10 @@ jobs:
           Type=Application
           Name=${APP_DISPLAY_NAME}
           Comment=A beautiful minimalist clock app for desktop
-          Exec=${APP_NAME}
+          Exec=${APP_NAME} %u
           Icon=${APP_ID}
           Categories=Utility;Clock;
+          MimeType=x-scheme-handler/minimalclock;
           Terminal=false
           EOF
 
@@ -91,6 +92,16 @@ jobs:
            countdown app for the desktop.
           EOF
 
+          cat > "$PKG_ROOT/DEBIAN/postinst" <<'EOF'
+          #!/bin/sh
+          set -e
+          if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database /usr/share/applications || true
+          fi
+          exit 0
+          EOF
+          chmod 0755 "$PKG_ROOT/DEBIAN/postinst"
+
           dpkg-deb --build --root-owner-group "$PKG_ROOT" "MinimalClock-${APP_VERSION}-amd64.deb"
 
       - name: Build AppImage
@@ -107,9 +118,10 @@ jobs:
           Type=Application
           Name=${APP_DISPLAY_NAME}
           Comment=A beautiful minimalist clock app for desktop
-          Exec=${APP_NAME}
+          Exec=${APP_NAME} %u
           Icon=${APP_ID}
           Categories=Utility;Clock;
+          MimeType=x-scheme-handler/minimalclock;
           Terminal=false
           EOF
           cp "$APPDIR/usr/share/applications/${APP_ID}.desktop" "$APPDIR/"

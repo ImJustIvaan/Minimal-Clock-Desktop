@@ -23,6 +23,10 @@ jobs:
         with:
           flutter-version: '3.44.4'
           channel: stable
+          # Flutter has no arm64-native Windows SDK archive; the x64 SDK
+          # runs fine under Windows 11's x64 emulation and still detects
+          # the real host CPU to build a native windows-arm64 app.
+          architecture: x64
 
       - name: Install dependencies
         run: flutter pub get

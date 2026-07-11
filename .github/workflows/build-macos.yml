@@ -1,0 +1,51 @@
+name: Build macOS DMG
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Build macOS release (Universal)
+        run: flutter build macos --release
+
+      - name: Create DMG
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/Minimal Clock.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
+          fi
+          echo "Using app at: $APP_PATH"
+          mkdir -p dmg_root
+          cp -R "$APP_PATH" dmg_root/
+          ln -s /Applications dmg_root/Applications
+          hdiutil create -volname "Minimal Clock" -srcfolder dmg_root -ov -format UDZO MinimalClock.dmg
+
+      - name: Verify DMG exists
+        run: |
+          if [ ! -f "MinimalClock.dmg" ]; then
+            echo "MinimalClock.dmg was not created!"
+            exit 1
+          fi
+          echo "DMG size: $(stat -f%z MinimalClock.dmg) bytes"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MinimalClock-macOS-DMG
+          path: MinimalClock.dmg

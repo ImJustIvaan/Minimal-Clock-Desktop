@@ -56,6 +56,27 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _info = null;
+    });
+    try {
+      await SupabaseService.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'minimalclock://login-callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = 'Something went wrong. Try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _submitMagicLink() async {
     setState(() {
       _loading = true;
@@ -65,6 +86,7 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await SupabaseService.client.auth.signInWithOtp(
         email: _emailCtrl.text.trim(),
+        emailRedirectTo: 'minimalclock://login-callback',
       );
       setState(() => _info = 'Check your email for a sign-in link.');
     } on AuthException catch (e) {
@@ -169,13 +191,58 @@ class _AuthScreenState extends State<AuthScreen> {
                       style: TextStyle(color: color.withValues(alpha: 0.5), fontSize: 13),
                     ),
                   ),
-                const SizedBox(height: 16),
-                Text(
-                  'Sign in with Google is currently not available on desktop.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: color.withValues(alpha: 0.3), fontSize: 12),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: color.withValues(alpha: 0.15))),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(color: color.withValues(alpha: 0.3), fontSize: 12),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: color.withValues(alpha: 0.15))),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _SecondaryButton(
+                  label: 'Continue with Google',
+                  color: color,
+                  onTap: _loading ? null : _signInWithGoogle,
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _SecondaryButton({required this.label, required this.color, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: onTap == null ? 0.15 : 0.3)),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color.withValues(alpha: onTap == null ? 0.3 : 0.8),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

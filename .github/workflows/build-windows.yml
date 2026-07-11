@@ -7,7 +7,15 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-latest
+          - arch: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +38,14 @@ jobs:
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (!(Test-Path $iscc)) {
-            Write-Error "ISCC.exe not found at $iscc"
+            $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
+          }
+          if (!(Test-Path $iscc)) {
+            Write-Error "ISCC.exe not found"
             exit 1
           }
-          Write-Host "Running: $iscc installer.iss"
-          & $iscc installer.iss
+          Write-Host "Running: $iscc /DArch=${{ matrix.arch }} installer.iss"
+          & $iscc "/DArch=${{ matrix.arch }}" installer.iss
           if ($LASTEXITCODE -ne 0) {
             Write-Error "ISCC failed with exit code $LASTEXITCODE"
             exit $LASTEXITCODE
@@ -43,13 +54,14 @@ jobs:
       - name: Verify installer exists
         shell: pwsh
         run: |
-          if (!(Test-Path "MinimalClockSetup.exe")) {
-            Write-Error "MinimalClockSetup.exe was not created!"
+          $file = "MinimalClockSetup-${{ matrix.arch }}.exe"
+          if (!(Test-Path $file)) {
+            Write-Error "$file was not created!"
             exit 1
           }
-          Write-Host "Installer size: $((Get-Item MinimalClockSetup.exe).Length) bytes"
+          Write-Host "Installer size: $((Get-Item $file).Length) bytes"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MinimalClock-Windows-Installer
-          path: MinimalClockSetup.exe
+          name: MinimalClock-Windows-Installer-${{ matrix.arch }}
+          path: MinimalClockSetup-${{ matrix.arch }}.exe

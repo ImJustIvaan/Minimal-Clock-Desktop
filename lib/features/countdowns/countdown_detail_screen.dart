@@ -66,9 +66,45 @@ class _CountdownDetailScreenState
     }
   }
 
-  void _share(String title) {
+  String _shareText(String title) {
     final url = '$kCountdownShareBaseUrl${widget.countdownId}';
-    Share.share('$title — count down with me: $url');
+    return '$title countdown — count down with me: $url';
+  }
+
+  Future<void> _share(String title) async {
+    final color = Theme.of(context).colorScheme.onSurface;
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Share countdown'),
+        content: Text(
+          'Share "$title" with others.',
+          style: TextStyle(color: color.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'copy'),
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'apps'),
+            child: const Text('Share via Apps'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || choice == null) return;
+
+    if (choice == 'copy') {
+      await Clipboard.setData(ClipboardData(text: _shareText(title)));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Copied to clipboard')),
+      );
+    } else {
+      await Share.share(_shareText(title));
+    }
   }
 
   void _copyId() {

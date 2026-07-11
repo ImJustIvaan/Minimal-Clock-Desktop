@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/settings_model.dart';
 import '../../core/providers/settings_provider.dart';
 
@@ -112,6 +113,16 @@ class _SettingsBody extends ConsumerWidget {
                   onChanged: (v) => update(settings.copyWith(hourlyNotifier: v)),
                 ),
               ]),
+              const _Section(label: 'CREDITS', children: [
+                _LinkRow(
+                  label: 'Made By @ImJustIvaan (a.k.a Ivaan S)',
+                  url: 'https://ivaan.cc',
+                ),
+                _LinkRow(
+                  label: 'Visit the Minimal Clock website',
+                  url: 'https://time.ivaan.cc',
+                ),
+              ]),
               const SizedBox(height: 48),
             ]),
           ),
@@ -146,6 +157,35 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 12),
           ...children,
         ],
+      ),
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  final String label;
+  final String url;
+
+  const _LinkRow({required this.label, required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
+    return InkWell(
+      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 16, color: color, fontWeight: FontWeight.w300),
+              ),
+            ),
+            Icon(Icons.open_in_new, size: 16, color: color.withValues(alpha: 0.4)),
+          ],
+        ),
       ),
     );
   }

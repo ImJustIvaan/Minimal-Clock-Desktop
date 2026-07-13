@@ -10,6 +10,7 @@
     <owners>ImJustIvaan</owners>
     <projectUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop</projectUrl>
     <packageSourceUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop</packageSourceUrl>
+    <licenseUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop/blob/main/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop</projectSourceUrl>
     <bugTrackerUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop/issues</bugTrackerUrl>

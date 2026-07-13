@@ -9,9 +9,9 @@ https://github.com/ImJustIvaan/Minimal-Clock-Desktop/releases
 To verify the checksum:
 1. Download the installer matching your architecture from the release
    referenced in tools\chocolateyinstall.ps1 (e.g.
-   MinimalClockSetup-x64.exe or MinimalClockSetup-arm64.exe).
+   MinimalClock-x64.exe or MinimalClock-arm64.exe).
 2. Get the SHA256 checksum:
-     Get-FileHash MinimalClockSetup-x64.exe -Algorithm SHA256
+     Get-FileHash MinimalClock-x64.exe -Algorithm SHA256
 3. Compare it to the checksum in tools\chocolateyinstall.ps1.
 
 The installers are built and published automatically from source via

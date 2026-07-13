@@ -1,0 +1,78 @@
+name: Publish APT Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (must match a GitHub release tagged vVERSION with MinimalClock.deb asset)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout or create apt-repo branch
+        run: |
+          set -e
+          git fetch origin apt-repo || true
+          if git show-ref --verify --quiet refs/remotes/origin/apt-repo; then
+            git checkout apt-repo
+          else
+            git checkout --orphan apt-repo
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+
+      - name: Download .deb from release
+        run: |
+          curl -sL -o "minimalclock_${{ inputs.version }}_amd64.deb" \
+            "https://github.com/ImJustIvaan/Minimal-Clock-Desktop/releases/download/v${{ inputs.version }}/MinimalClock.deb"
+
+      - name: Copy GPG public key from main
+        run: git show origin/main:apt-public-key.asc > apt-public-key.asc
+
+      - name: Import signing key
+        run: echo "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --batch --import
+
+      - name: Build repo pool + Packages index
+        run: |
+          set -e
+          mkdir -p pool/main/m/minimalclock
+          cp "minimalclock_${{ inputs.version }}_amd64.deb" pool/main/m/minimalclock/
+
+          mkdir -p dists/stable/main/binary-amd64
+          apt-ftparchive packages pool > dists/stable/main/binary-amd64/Packages
+          gzip -9c dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.gz
+
+          cat > apt-ftparchive.conf <<EOF
+          APT::FTPArchive::Release::Origin "Minimal Clock";
+          APT::FTPArchive::Release::Label "Minimal Clock";
+          APT::FTPArchive::Release::Suite "stable";
+          APT::FTPArchive::Release::Codename "stable";
+          APT::FTPArchive::Release::Architectures "amd64";
+          APT::FTPArchive::Release::Components "main";
+          EOF
+
+          cd dists/stable
+          apt-ftparchive -c ../../apt-ftparchive.conf release . > Release
+          cd ../..
+          rm apt-ftparchive.conf
+
+      - name: Sign Release
+        run: |
+          set -e
+          cd dists/stable
+          gpg --batch --yes --default-key apt@ivaan.cc --clearsign -o InRelease Release
+          gpg --batch --yes --default-key apt@ivaan.cc -abs -o Release.gpg Release
+
+      - name: Commit and push
+        run: |
+          rm -f "minimalclock_${{ inputs.version }}_amd64.deb"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pool dists apt-public-key.asc
+          git commit -m "Publish minimalclock ${{ inputs.version }}" || echo "Nothing to commit"
+          git push origin apt-repo

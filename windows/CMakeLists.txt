@@ -75,16 +75,40 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
-# Bundle the MSVC/UCRT runtime DLLs (vcruntime140.dll, msvcp140.dll, etc.)
-# next to the executable so the app runs on machines without the Visual C++
+# Bundle the MSVC runtime DLLs (vcruntime140.dll, msvcp140.dll, etc.) next to
+# the executable so the app runs on machines without the Visual C++
 # Redistributable installed (e.g. clean CI/validation VMs), instead of
-# failing at launch with STATUS_DLL_NOT_FOUND.
-set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
-include(InstallRequiredSystemLibraries)
-if(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
-  install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
-    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-    COMPONENT Runtime)
+# failing at launch with STATUS_DLL_NOT_FOUND. InstallRequiredSystemLibraries
+# is fragile across CMake/VS versions and cross-arch configs, so locate the
+# actual redist DLLs directly from the VS installation instead.
+if(MSVC)
+  set(_redist_arch "${CMAKE_VS_PLATFORM_NAME}")
+  if(NOT _redist_arch)
+    set(_redist_arch "${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+  string(TOLOWER "${_redist_arch}" _redist_arch)
+
+  file(GLOB _vc_redist_dirs
+    "$ENV{VCToolsRedistDir}${_redist_arch}/Microsoft.VC*.CRT"
+    "C:/Program Files/Microsoft Visual Studio/*/*/VC/Redist/MSVC/*/${_redist_arch}/Microsoft.VC*.CRT"
+    "C:/Program Files (x86)/Microsoft Visual Studio/*/*/VC/Redist/MSVC/*/${_redist_arch}/Microsoft.VC*.CRT"
+  )
+
+  set(_vc_redist_dlls "")
+  foreach(_dir ${_vc_redist_dirs})
+    file(GLOB _dlls "${_dir}/*.dll")
+    list(APPEND _vc_redist_dlls ${_dlls})
+  endforeach()
+
+  if(_vc_redist_dlls)
+    list(REMOVE_DUPLICATES _vc_redist_dlls)
+    install(FILES ${_vc_redist_dlls}
+      DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+      COMPONENT Runtime)
+  else()
+    message(WARNING "Could not locate VC++ redistributable DLLs to bundle; "
+      "the app may require the redistributable installed on target machines.")
+  endif()
 endif()
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"

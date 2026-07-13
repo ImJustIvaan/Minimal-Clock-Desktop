@@ -1,0 +1,40 @@
+name: Publish Snap Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (should match snap/snapcraft.yaml and a GitHub release)'
+        required: true
+      release-channel:
+        description: 'Snap Store channel to release to'
+        required: true
+        default: 'stable'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set snap version
+        run: sed -i "s/^version: .*/version: '${{ inputs.version }}'/" snap/snapcraft.yaml
+
+      - name: Build snap
+        id: build
+        uses: snapcore/action-build@v1
+
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal-clock-snap
+          path: ${{ steps.build.outputs.snap }}
+
+      - name: Publish to Snap Store
+        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: ${{ inputs.release-channel }}

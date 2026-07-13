@@ -72,7 +72,7 @@ jobs:
       - name: Verify installer exists
         shell: pwsh
         run: |
-          $file = "MinimalClockSetup-${{ matrix.arch }}.exe"
+          $file = "MinimalClock-${{ matrix.arch }}.exe"
           if (!(Test-Path $file)) {
             Write-Error "$file was not created!"
             exit 1
@@ -82,4 +82,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: MinimalClock-Windows-Installer-${{ matrix.arch }}
-          path: MinimalClockSetup-${{ matrix.arch }}.exe
+          path: MinimalClock-${{ matrix.arch }}.exe

@@ -102,7 +102,7 @@ jobs:
           EOF
           chmod 0755 "$PKG_ROOT/DEBIAN/postinst"
 
-          dpkg-deb --build --root-owner-group "$PKG_ROOT" "MinimalClock-${APP_VERSION}-amd64.deb"
+          dpkg-deb --build --root-owner-group "$PKG_ROOT" "MinimalClock.deb"
 
       - name: Build AppImage
         run: |
@@ -140,18 +140,18 @@ jobs:
 
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
-          ./appimagetool --appimage-extract-and-run "$APPDIR" "MinimalClock-${APP_VERSION}-x86_64.AppImage"
+          ./appimagetool --appimage-extract-and-run "$APPDIR" "MinimalClock.AppImage"
 
       - name: Verify artifacts exist
         run: |
-          ls -la MinimalClock-*.deb MinimalClock-*.AppImage
+          ls -la MinimalClock.deb MinimalClock.AppImage
 
       - uses: actions/upload-artifact@v4
         with:
           name: MinimalClock-Linux-Deb
-          path: MinimalClock-*.deb
+          path: MinimalClock.deb
 
       - uses: actions/upload-artifact@v4
         with:
           name: MinimalClock-Linux-AppImage
-          path: MinimalClock-*.AppImage
+          path: MinimalClock.AppImage

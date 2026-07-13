@@ -36,7 +36,12 @@ jobs:
 
       - name: Pack
         shell: pwsh
-        run: choco pack choco/minimalclock.nuspec --version "${{ inputs.version }}" --outputdirectory .
+        run: |
+          choco pack choco/minimalclock.nuspec --version="${{ inputs.version }}" --outputdirectory=. --verbose
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "choco pack failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
 
       - name: Push
         shell: pwsh

@@ -104,6 +104,10 @@ jobs:
 
           dpkg-deb --build --root-owner-group "$PKG_ROOT" "MinimalClock.deb"
 
+          # Plain gzip tarball of the same FHS-style payload, for consumers
+          # (e.g. Flatpak) that can't rely on dpkg/zstd being available.
+          tar -C "$PKG_ROOT" -czf "$GITHUB_WORKSPACE/MinimalClock-linux-bundle.tar.gz" opt usr
+
       - name: Build AppImage
         run: |
           set -e
@@ -144,7 +148,7 @@ jobs:
 
       - name: Verify artifacts exist
         run: |
-          ls -la MinimalClock.deb MinimalClock.AppImage
+          ls -la MinimalClock.deb MinimalClock.AppImage MinimalClock-linux-bundle.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
@@ -155,3 +159,8 @@ jobs:
         with:
           name: MinimalClock-Linux-AppImage
           path: MinimalClock.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MinimalClock-Linux-Bundle
+          path: MinimalClock-linux-bundle.tar.gz

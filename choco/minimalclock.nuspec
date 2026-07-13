@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>minimalclock</id>
+    <!-- Keep in sync with the AppVersion in installer.iss and pubspec.yaml. -->
+    <version>1.0.0</version>
+    <title>Minimal Clock</title>
+    <authors>ImJustIvaan</authors>
+    <owners>ImJustIvaan</owners>
+    <projectUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop</projectUrl>
+    <packageSourceUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop</packageSourceUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/ImJustIvaan/Minimal-Clock-Desktop/issues</bugTrackerUrl>
+    <iconUrl>https://raw.githubusercontent.com/ImJustIvaan/Minimal-Clock-Desktop/main/windows/runner/resources/app_icon.ico</iconUrl>
+    <tags>clock timer countdown minimalist desktop</tags>
+    <summary>A clean, minimalist clock, timer, and countdown app for the desktop.</summary>
+    <description>
+Minimal Clock is a clean, minimalist clock, timer, and countdown app for the desktop.
+
+- Digital or analog clock, with optional fill-display mode
+- Countdown timer with a circular progress ring
+- Named countdowns synced across devices
+- Light and dark themes
+
+Supports both x64 and arm64 Windows.
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

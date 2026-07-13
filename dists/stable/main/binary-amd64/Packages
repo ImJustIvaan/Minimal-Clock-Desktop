@@ -1,0 +1,18 @@
+Package: minimal-clock
+Architecture: amd64
+Version: 1.0.0
+Priority: optional
+Section: utils
+Maintainer: ImJustIvaan <hello@ivaan.cc>
+Installed-Size: 28656
+Depends: libgtk-3-0
+Filename: pool/main/m/minimalclock/minimalclock_1.0.0_amd64.deb
+Size: 9654122
+MD5sum: a1763413e2f60aa44bafbc048d761e9c
+SHA1: 733fde4e41f6b3fc60c9c6b863d786852bad0f70
+SHA256: 4b7d03cafc38a6ea2075cff4bba7edce98e8cf1798c9b78d4eca11a3556a9c2c
+SHA512: 7fb48700631c0b92b2f48a86656516bac6b32973b4d61efe87db6f26bdf034c8ae962d7b7cdc8a15ec61cae4c9592d69b5c1af06e25a6295940e67fcea031a86
+Description: A beautiful minimalist clock app for desktop.
+ Minimal Clock is a clean, minimalist clock, timer, and
+ countdown app for the desktop.
+

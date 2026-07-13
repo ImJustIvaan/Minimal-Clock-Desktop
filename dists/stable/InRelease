@@ -1,0 +1,43 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Architectures: amd64
+Codename: stable
+Components: main
+Date: Mon, 13 Jul 2026 16:38:00 +0000
+Label: Minimal Clock
+Origin: Minimal Clock
+Suite: stable
+MD5Sum:
+ aa1d75d46f36950cc1f25509b66442f4              150 Release
+ fbbb132b3b82b9a84894c44aaa0fa0ec              699 main/binary-amd64/Packages
+ 92c99eb1f3a8c7684954b07607ee223d              491 main/binary-amd64/Packages.gz
+SHA1:
+ 6628d47ba19811ab1ff1a5bfa96f7b74548dd024              150 Release
+ 5cfe389383d1b0ebf0b537c617cf6a0724033588              699 main/binary-amd64/Packages
+ 970642f6e9cb927287bb0fa1ec800e1da9f43bdb              491 main/binary-amd64/Packages.gz
+SHA256:
+ 6f797ffbcde806819358022337598362ad4415466e646c27ef22e788b8ae9471              150 Release
+ b29081f571ad0b2030a9558d5db7fee860b99b6587806e3f6051acff3a893476              699 main/binary-amd64/Packages
+ f225a1fd6d21c9b863d3b2fc7599bb84ddc4a8ec3f8564e7b15685fde85be294              491 main/binary-amd64/Packages.gz
+SHA512:
+ 2837e56aa789ac2c0820e1aa06c8fcd1aca4f44422a489576274b67769678164fffaf9dbd10226f137f9298c1d3bbe0470593219a7bf319f1a8b55f9ebe7a920              150 Release
+ a9bd0af607116e76a57389cbf54eb0e5634d9c559ef60d82923b413b95de0d5aa092995259a3a425249f29abf0a62601fa73d621f045e29e0e82f7252f2b7357              699 main/binary-amd64/Packages
+ f574b2da4eac511200e01281c118811bbceb8c3310b9c796ab832d4fa735e7d6915407cb597b65cdd0f4716bf3e501b643908ed0419275196e07622803742803              491 main/binary-amd64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQJBBAEBCgArFiEEPPAUz7Och4mVij6Ns1Y5xW1XUvIFAmpVFGgNHGFwdEBpdmFh
+bi5jYwAKCRCzVjnFbVdS8vyZD/9FbAM/G0bN2DwxSG3bDBJBGJEgu3r8dJY4Qh1p
+A2W82+QFhJoQqa4UDDOFXf0eHFuY/CLufIicJtzp2j7ueIzZ6UHp6Ql1pxPcBppI
+7Y6hA90z6AeyKNvu/jxFix9riVSJWfH3KmEmbSg9tJhNRLiDM/Et8p0MEZhpdeaz
+sGQaLsyJA98s8H4JqT2k2f8r1QFUgH2MymVo9Kvwbvlny55yJY9ojs3IMheRtGMa
+pRMWxGAtr6inWNnzdt0hwBCcy36BBH4wbQAKCIHSRBXk/LX2OsuZyyV+pmcytacM
+xYmWbq8avX4J/rALxqyY80U/jwXn1qYPYqTt1Y9LhSzFDs6/HTHQ0tEa9ynAyHxn
+YTkMit1VmOMZKAkum4IFGPQWe3IklFrOxg42BQ5dOh+7Nvzqe0jSN4efzl9NlTuH
+MRBDaDplFnvr3QEJXUAxDXngeWNChwtAana5o/BB/wedkbm/NTGCqGHRcJ+V98C/
+OHqsN5hcN4sGMjkMvGxmMRvb6t0RXderIgyxHEEeHkqwFV/MZycxzorh9lfLDiPl
+nhs24DjepVvlLoEOJWA9xOALXQM2A0pnkxeWpGesuEfrOS/AkW4XIgA1sHfgBXtM
+L1XZIGHVga3JljfJKNWG3vEZQbF7DYObmgdQjPgrZStGXFhWOOVDJlKJ+okofsb8
+/OmNAQ==
+=ekGC
+-----END PGP SIGNATURE-----

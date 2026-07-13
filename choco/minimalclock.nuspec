@@ -2,8 +2,8 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>minimalclock</id>
-    <!-- Overridden at pack time by .github/workflows/publish-choco.yml via
-         `choco pack --version`; this is only the fallback for manual packs. -->
+    <!-- Overridden at pack time by .github/workflows/publish-choco.yml (choco
+         pack's version flag); this is only the fallback for manual packs. -->
     <version>1.0.0</version>
     <title>Minimal Clock</title>
     <authors>ImJustIvaan</authors>

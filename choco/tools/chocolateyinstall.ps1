@@ -1,18 +1,18 @@
 $ErrorActionPreference = 'Stop'
 
 $packageName = 'minimalclock'
-# Bump this alongside <version> in ../minimalclock.nuspec and tag the
-# matching GitHub release as "v$version" with MinimalClock-x64.exe /
-# MinimalClock-arm64.exe assets (produced by .github/workflows/build-windows.yml).
-$version     = '1.0.0'
+# These __TOKEN__ placeholders are substituted automatically by
+# .github/workflows/publish-choco.yml at pack time. For a manual/local pack,
+# replace them by hand: version must match a GitHub release tagged "v$version"
+# with MinimalClock-x64.exe / MinimalClock-arm64.exe assets (produced by
+# .github/workflows/build-windows.yml), and the checksums come from
+#   (Get-FileHash MinimalClock-x64.exe -Algorithm SHA256).Hash
+$version       = '__VERSION__'
+$checksumX64   = '__CHECKSUM_X64__'
+$checksumArm64 = '__CHECKSUM_ARM64__'
+
 $releaseTag  = "v$version"
 $baseUrl     = "https://github.com/ImJustIvaan/Minimal-Clock-Desktop/releases/download/$releaseTag"
-
-# TODO: after publishing the GitHub release, replace these with the real
-# SHA256 checksums, e.g. via:
-#   (Get-FileHash MinimalClock-x64.exe -Algorithm SHA256).Hash
-$checksumX64   = 'REPLACE_WITH_X64_SHA256'
-$checksumArm64 = 'REPLACE_WITH_ARM64_SHA256'
 
 $isArm64 = $env:PROCESSOR_ARCHITECTURE -eq 'ARM64'
 

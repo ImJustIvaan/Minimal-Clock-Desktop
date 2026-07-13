@@ -1,0 +1,43 @@
+name: Publish Chocolatey Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (must match a GitHub release tagged vVERSION with MinimalClock-x64.exe / MinimalClock-arm64.exe assets)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release assets
+        shell: pwsh
+        run: |
+          $tag = "v${{ inputs.version }}"
+          $base = "https://github.com/ImJustIvaan/Minimal-Clock-Desktop/releases/download/$tag"
+          Invoke-WebRequest -Uri "$base/MinimalClock-x64.exe" -OutFile MinimalClock-x64.exe
+          Invoke-WebRequest -Uri "$base/MinimalClock-arm64.exe" -OutFile MinimalClock-arm64.exe
+
+      - name: Compute checksums and patch install script
+        shell: pwsh
+        run: |
+          $x64Hash   = (Get-FileHash MinimalClock-x64.exe -Algorithm SHA256).Hash
+          $arm64Hash = (Get-FileHash MinimalClock-arm64.exe -Algorithm SHA256).Hash
+
+          $installScript = "choco/tools/chocolateyinstall.ps1"
+          (Get-Content $installScript -Raw) `
+            -replace '__VERSION__', '${{ inputs.version }}' `
+            -replace '__CHECKSUM_X64__', $x64Hash `
+            -replace '__CHECKSUM_ARM64__', $arm64Hash `
+            | Set-Content $installScript -NoNewline
+
+      - name: Pack
+        shell: pwsh
+        run: choco pack choco/minimalclock.nuspec --version "${{ inputs.version }}" --outputdirectory .
+
+      - name: Push
+        shell: pwsh
+        run: choco push "minimalclock.${{ inputs.version }}.nupkg" --api-key "${{ secrets.CHOCO_API_KEY }}" --source https://push.chocolatey.org/

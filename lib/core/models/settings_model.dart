@@ -12,6 +12,7 @@ class AppSettings {
   final bool analogMode;
   final bool fillDisplay;
   final bool hourlyNotifier;
+  final String clockFontFamily;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
@@ -24,6 +25,7 @@ class AppSettings {
     this.analogMode = false,
     this.fillDisplay = false,
     this.hourlyNotifier = false,
+    this.clockFontFamily = '',
   });
 
   AppSettings copyWith({
@@ -37,6 +39,7 @@ class AppSettings {
     bool? analogMode,
     bool? fillDisplay,
     bool? hourlyNotifier,
+    String? clockFontFamily,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -49,6 +52,7 @@ class AppSettings {
       analogMode: analogMode ?? this.analogMode,
       fillDisplay: fillDisplay ?? this.fillDisplay,
       hourlyNotifier: hourlyNotifier ?? this.hourlyNotifier,
+      clockFontFamily: clockFontFamily ?? this.clockFontFamily,
     );
   }
 
@@ -63,6 +67,7 @@ class AppSettings {
         'analogMode': analogMode,
         'fillDisplay': fillDisplay,
         'hourlyNotifier': hourlyNotifier,
+        'clockFontFamily': clockFontFamily,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -76,5 +81,6 @@ class AppSettings {
         analogMode: json['analogMode'] as bool? ?? false,
         fillDisplay: json['fillDisplay'] as bool? ?? false,
         hourlyNotifier: json['hourlyNotifier'] as bool? ?? false,
+        clockFontFamily: json['clockFontFamily'] as String? ?? '',
       );
 }

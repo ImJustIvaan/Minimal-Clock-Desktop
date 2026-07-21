@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/ui_visibility_provider.dart';
 import 'widgets/animated_digit.dart';
 import 'widgets/analog_clock.dart';
 
@@ -57,17 +58,37 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
       data: (settings) {
         final displayNow = _localizedNow(settings.selectedTimezone);
         final color = Theme.of(context).colorScheme.onSurface;
+        final uiHidden = ref.watch(uiHiddenProvider);
 
         return Scaffold(
-          body: settings.analogMode
-              ? _buildAnalog(displayNow, settings, color)
-              : _buildDigital(displayNow, settings, color),
+          body: GestureDetector(
+            // While hidden, clicking anywhere brings the UI back.
+            onTap: uiHidden ? () => ref.read(uiHiddenProvider.notifier).state = false : null,
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              children: [
+                settings.analogMode
+                    ? _buildAnalog(displayNow, settings, color, uiHidden)
+                    : _buildDigital(displayNow, settings, color, uiHidden),
+                if (!uiHidden)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      onPressed: () => ref.read(uiHiddenProvider.notifier).state = true,
+                      icon: Icon(Icons.visibility_off_outlined, color: color.withValues(alpha: 0.35), size: 20),
+                      tooltip: 'Hide UI',
+                    ),
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildAnalog(DateTime now, dynamic settings, Color color) {
+  Widget _buildAnalog(DateTime now, dynamic settings, Color color, bool uiHidden) {
     final dateStr = DateFormat('MMMM d, yyyy').format(now);
     final weekdayStr = DateFormat('EEEE').format(now);
     final fill = settings.fillDisplay as bool;
@@ -91,7 +112,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (settings.selectedTimezone.isNotEmpty) ...[
+          if (!uiHidden && settings.selectedTimezone.isNotEmpty) ...[
             Text(
               (settings.selectedTimezone as String).replaceAll('_', ' '),
               style: TextStyle(fontSize: 11, letterSpacing: 3, color: color.withValues(alpha: 0.3)),
@@ -104,13 +125,13 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
             showSeconds: settings.showSeconds as bool,
             size: clockSize.clamp(200.0, 500.0),
           ),
-          if (settings.showWeekday || settings.showDate) const SizedBox(height: 28),
-          if (settings.showWeekday)
+          if (!uiHidden && (settings.showWeekday || settings.showDate)) const SizedBox(height: 28),
+          if (!uiHidden && settings.showWeekday)
             Text(
               weekdayStr.toUpperCase(),
               style: TextStyle(fontSize: 13, letterSpacing: 4, color: color.withValues(alpha: 0.4), fontWeight: FontWeight.w400),
             ),
-          if (settings.showDate) ...[
+          if (!uiHidden && settings.showDate) ...[
             const SizedBox(height: 6),
             Text(
               dateStr,
@@ -122,7 +143,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     );
   }
 
-  Widget _buildDigital(DateTime now, dynamic settings, Color color) {
+  Widget _buildDigital(DateTime now, dynamic settings, Color color, bool uiHidden) {
     final timeFormat = settings.use24Hour
         ? (settings.showSeconds ? 'HH:mm:ss' : 'HH:mm')
         : (settings.showSeconds ? 'hh:mm:ss' : 'hh:mm');
@@ -132,6 +153,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     final weekdayStr = DateFormat('EEEE').format(now);
     final fill = settings.fillDisplay as bool;
     final fontSize = settings.clockFontSize as double;
+    final fontFamily = settings.clockFontFamily as String;
 
     if (fill) {
       // Fill mode: scale the time string to fill the available width
@@ -145,15 +167,11 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    timeStr,
-                    style: TextStyle(
-                      fontSize: 500,
-                      fontWeight: FontWeight.w200,
-                      color: color,
-                      letterSpacing: -8,
-                      height: 1,
-                    ),
+                  AnimatedClockText(
+                    text: timeStr,
+                    fontSize: 500,
+                    color: color,
+                    fontFamily: fontFamily,
                   ),
                   if (!settings.use24Hour && amPm.isNotEmpty)
                     Padding(
@@ -181,14 +199,14 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (settings.selectedTimezone.isNotEmpty) ...[
+            if (!uiHidden && settings.selectedTimezone.isNotEmpty) ...[
               Text(
                 (settings.selectedTimezone as String).replaceAll('_', ' '),
                 style: TextStyle(fontSize: 11, letterSpacing: 3, color: color.withValues(alpha: 0.3)),
               ),
               const SizedBox(height: 4),
             ],
-            if (settings.showWeekday) ...[
+            if (!uiHidden && settings.showWeekday) ...[
               Text(
                 weekdayStr.toUpperCase(),
                 style: TextStyle(fontSize: 13, letterSpacing: 4, color: color.withValues(alpha: 0.4), fontWeight: FontWeight.w400),
@@ -199,7 +217,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                AnimatedClockText(text: timeStr, fontSize: fontSize, color: color),
+                AnimatedClockText(text: timeStr, fontSize: fontSize, color: color, fontFamily: fontFamily),
                 if (!settings.use24Hour && amPm.isNotEmpty) ...[
                   const SizedBox(width: 6),
                   Padding(
@@ -217,7 +235,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
                 ],
               ],
             ),
-            if (settings.showDate) ...[
+            if (!uiHidden && settings.showDate) ...[
               const SizedBox(height: 16),
               Text(
                 dateStr,

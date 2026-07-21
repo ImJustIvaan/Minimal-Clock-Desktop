@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import '../../core/models/settings_model.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/ui_visibility_provider.dart';
+import '../settings/timezone_picker_dialog.dart';
 import 'widgets/animated_digit.dart';
 import 'widgets/analog_clock.dart';
+import 'widgets/world_clock_tile.dart';
 
 class ClockScreen extends ConsumerStatefulWidget {
   const ClockScreen({super.key});
@@ -49,6 +52,70 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     }
   }
 
+  Future<void> _addCity(BuildContext context, AppSettings settings) async {
+    final picked = await showTimezonePicker(context, selected: '');
+    if (picked == null || picked.isEmpty) return;
+    if (settings.worldClocks.contains(picked)) return;
+    ref.read(settingsProvider.notifier).save(
+          settings.copyWith(worldClocks: [...settings.worldClocks, picked]),
+        );
+  }
+
+  void _removeCity(AppSettings settings, String tzId) {
+    ref.read(settingsProvider.notifier).save(
+          settings.copyWith(
+            worldClocks: settings.worldClocks.where((z) => z != tzId).toList(),
+          ),
+        );
+  }
+
+  Widget _buildWorldClocks(BuildContext context, AppSettings settings, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          for (final tzId in settings.worldClocks)
+            WorldClockTile(
+              tzId: tzId,
+              use24Hour: settings.use24Hour,
+              onRemove: () => _removeCity(settings, tzId),
+            ),
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => _addCity(context, settings),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.public, size: 16, color: color.withValues(alpha: 0.5)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'ADD CITY',
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1.5,
+                        color: color.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
@@ -68,8 +135,8 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
             child: Stack(
               children: [
                 settings.analogMode
-                    ? _buildAnalog(displayNow, settings, color, uiHidden)
-                    : _buildDigital(displayNow, settings, color, uiHidden),
+                    ? _buildAnalog(context, displayNow, settings, color, uiHidden)
+                    : _buildDigital(context, displayNow, settings, color, uiHidden),
                 if (!uiHidden)
                   Positioned(
                     top: 8,
@@ -88,10 +155,10 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     );
   }
 
-  Widget _buildAnalog(DateTime now, dynamic settings, Color color, bool uiHidden) {
+  Widget _buildAnalog(BuildContext context, DateTime now, AppSettings settings, Color color, bool uiHidden) {
     final dateStr = DateFormat('MMMM d, yyyy').format(now);
     final weekdayStr = DateFormat('EEEE').format(now);
-    final fill = settings.fillDisplay as bool;
+    final fill = settings.fillDisplay;
 
     if (fill) {
       return LayoutBuilder(builder: (context, constraints) {
@@ -100,21 +167,21 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
           child: AnalogClock(
             time: now,
             color: color,
-            showSeconds: settings.showSeconds as bool,
+            showSeconds: settings.showSeconds,
             size: size,
           ),
         );
       });
     }
 
-    final clockSize = (settings.clockFontSize as double) * 2.8;
+    final clockSize = settings.clockFontSize * 2.8;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (!uiHidden && settings.selectedTimezone.isNotEmpty) ...[
             Text(
-              (settings.selectedTimezone as String).replaceAll('_', ' '),
+              settings.selectedTimezone.replaceAll('_', ' '),
               style: TextStyle(fontSize: 11, letterSpacing: 3, color: color.withValues(alpha: 0.3)),
             ),
             const SizedBox(height: 4),
@@ -122,7 +189,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
           AnalogClock(
             time: now,
             color: color,
-            showSeconds: settings.showSeconds as bool,
+            showSeconds: settings.showSeconds,
             size: clockSize.clamp(200.0, 500.0),
           ),
           if (!uiHidden && (settings.showWeekday || settings.showDate)) const SizedBox(height: 28),
@@ -138,12 +205,13 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
               style: TextStyle(fontSize: 16, letterSpacing: 1, color: color.withValues(alpha: 0.45), fontWeight: FontWeight.w300),
             ),
           ],
+          if (!uiHidden) _buildWorldClocks(context, settings, color),
         ],
       ),
     );
   }
 
-  Widget _buildDigital(DateTime now, dynamic settings, Color color, bool uiHidden) {
+  Widget _buildDigital(BuildContext context, DateTime now, AppSettings settings, Color color, bool uiHidden) {
     final timeFormat = settings.use24Hour
         ? (settings.showSeconds ? 'HH:mm:ss' : 'HH:mm')
         : (settings.showSeconds ? 'hh:mm:ss' : 'hh:mm');
@@ -151,9 +219,9 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
     final amPm = settings.use24Hour ? '' : DateFormat('a').format(now);
     final dateStr = DateFormat('MMMM d, yyyy').format(now);
     final weekdayStr = DateFormat('EEEE').format(now);
-    final fill = settings.fillDisplay as bool;
-    final fontSize = settings.clockFontSize as double;
-    final fontFamily = settings.clockFontFamily as String;
+    final fill = settings.fillDisplay;
+    final fontSize = settings.clockFontSize;
+    final fontFamily = settings.clockFontFamily;
 
     if (fill) {
       // Fill mode: scale the time string to fill the available width
@@ -201,7 +269,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
           children: [
             if (!uiHidden && settings.selectedTimezone.isNotEmpty) ...[
               Text(
-                (settings.selectedTimezone as String).replaceAll('_', ' '),
+                settings.selectedTimezone.replaceAll('_', ' '),
                 style: TextStyle(fontSize: 11, letterSpacing: 3, color: color.withValues(alpha: 0.3)),
               ),
               const SizedBox(height: 4),
@@ -242,6 +310,7 @@ class _ClockScreenState extends ConsumerState<ClockScreen> {
                 style: TextStyle(fontSize: 16, letterSpacing: 1, color: color.withValues(alpha: 0.45), fontWeight: FontWeight.w300),
               ),
             ],
+            if (!uiHidden) _buildWorldClocks(context, settings, color),
           ],
         ),
       ),

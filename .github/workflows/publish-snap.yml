@@ -14,6 +14,8 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-22.04
+    env:
+      HAS_STORE_CREDS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +34,7 @@ jobs:
           path: ${{ steps.build.outputs.snap }}
 
       - name: Publish to Snap Store
-        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        if: ${{ env.HAS_STORE_CREDS == 'true' }}
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
@@ -68,6 +69,10 @@ class _SettingsBody extends ConsumerWidget {
                 ),
               ]),
               _Section(label: 'CLOCK', children: [
+                _FontRow(
+                  value: settings.clockFontFamily,
+                  onChanged: (v) => update(settings.copyWith(clockFontFamily: v)),
+                ),
                 _SwitchRow(
                   label: 'Analog mode',
                   value: settings.analogMode,
@@ -454,6 +459,177 @@ class _TimezonePickerState extends State<_TimezonePicker> {
                           ),
                           if (isSelected)
                             Icon(Icons.check, size: 16, color: color),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FontRow extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _FontRow({required this.value, required this.onChanged});
+
+  Future<void> _openPicker(BuildContext context) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _FontPicker(selected: value),
+    );
+    if (result != null) onChanged(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Clock Font',
+              style: TextStyle(fontSize: 16, color: color, fontWeight: FontWeight.w300),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _openPicker(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: color.withValues(alpha: 0.15)),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    value.isEmpty ? 'Default' : value,
+                    style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w300),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(Icons.expand_more, size: 16, color: color.withValues(alpha: 0.5)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FontPicker extends StatefulWidget {
+  final String selected;
+
+  const _FontPicker({required this.selected});
+
+  @override
+  State<_FontPicker> createState() => _FontPickerState();
+}
+
+class _FontPickerState extends State<_FontPicker> {
+  late final List<String> _allFonts = GoogleFonts.asMap().keys.toList()..sort();
+  late List<String> _filtered;
+  final _ctrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = ['', ..._allFonts];
+    _ctrl.addListener(() {
+      final q = _ctrl.text.toLowerCase();
+      setState(() {
+        _filtered = q.isEmpty
+            ? ['', ..._allFonts]
+            : _allFonts.where((f) => f.toLowerCase().contains(q)).toList();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
+    final bg = Theme.of(context).colorScheme.surface;
+
+    return Dialog(
+      backgroundColor: bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SizedBox(
+        width: 420,
+        height: 520,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: TextField(
+                controller: _ctrl,
+                autofocus: true,
+                style: TextStyle(fontSize: 14, color: color),
+                decoration: InputDecoration(
+                  hintText: 'Search fonts…',
+                  hintStyle: TextStyle(color: color.withValues(alpha: 0.35)),
+                  prefixIcon: Icon(Icons.search, color: color.withValues(alpha: 0.4), size: 18),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: color.withValues(alpha: 0.15)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: color.withValues(alpha: 0.15)),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  isDense: true,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _filtered.length,
+                itemBuilder: (_, i) {
+                  final name = _filtered[i];
+                  final isSelected = name == widget.selected;
+                  final isDefault = name.isEmpty;
+                  return InkWell(
+                    onTap: () => Navigator.of(context).pop(name),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              isDefault ? 'Default' : name,
+                              style: isDefault
+                                  ? TextStyle(
+                                      fontSize: 14,
+                                      color: isSelected ? color : color.withValues(alpha: 0.7),
+                                      fontWeight: isSelected ? FontWeight.w400 : FontWeight.w300,
+                                    )
+                                  : GoogleFonts.getFont(
+                                      name,
+                                      textStyle: TextStyle(
+                                        fontSize: 14,
+                                        color: isSelected ? color : color.withValues(alpha: 0.7),
+                                        fontWeight: isSelected ? FontWeight.w400 : FontWeight.w300,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          if (isSelected) Icon(Icons.check, size: 16, color: color),
                         ],
                       ),
                     ),

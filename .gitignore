@@ -55,3 +55,4 @@ windows/flutter/generated_plugin_registrant.h
 
 # Lock file (regenerated via flutter pub get)
 pubspec.lock
+macos-signing/

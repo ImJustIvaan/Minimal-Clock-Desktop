@@ -1,5 +1,18 @@
 name: Build macOS DMG
 
+# Produces a Developer-ID-signed, notarized, stapled DMG ready for direct
+# distribution outside the Mac App Store. Does nothing useful for signing
+# until the required secrets below are set in the repo's Settings ->
+# Secrets and variables -> Actions.
+#
+# Required secrets:
+#   MACOS_CERTIFICATE_P12_BASE64  - Developer ID Application .p12 certificate
+#   MACOS_CERTIFICATE_PASSWORD    - password used when exporting the .p12
+#   MACOS_KEYCHAIN_PASSWORD       - any throwaway password for the temp CI keychain
+#   APPLE_TEAM_ID                 - 10-char Apple Developer Team ID
+#   APPLE_API_KEY_ID              - App Store Connect API key ID
+#   APPLE_API_ISSUER_ID           - App Store Connect API issuer ID
+#   APPLE_API_KEY_BASE64          - the AuthKey_<KEYID>.p8 file, base64-encoded
 on:
   push:
     branches: [main]
@@ -24,6 +37,41 @@ jobs:
 
       - name: Build macOS release (Universal)
         run: flutter build macos --release
+
+      - name: Import signing certificate into a temporary keychain
+        env:
+          CERT_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/macos-signing.keychain-db"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/developerid.p12"
+          security import "$RUNNER_TEMP/developerid.p12" -k "$KEYCHAIN_PATH" \
+            -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
+
+      - name: Sign app with Developer ID and hardened runtime
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/Minimal Clock.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
+          fi
+          codesign --force --deep --options runtime \
+            --entitlements macos/Runner/Release.entitlements \
+            --sign "Developer ID Application: Amit Sondhi ($APPLE_TEAM_ID)" \
+            "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
       - name: Install create-dmg
         run: brew install create-dmg
@@ -62,6 +110,24 @@ jobs:
             exit 1
           fi
           echo "DMG size: $(stat -f%z MinimalClock.dmg) bytes"
+
+      - name: Notarize DMG
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          echo "$APPLE_API_KEY_BASE64" | base64 --decode \
+            > "$RUNNER_TEMP/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8"
+          xcrun notarytool submit MinimalClock.dmg \
+            --key "$RUNNER_TEMP/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --wait
+
+      - name: Staple notarization ticket
+        run: xcrun stapler staple MinimalClock.dmg
 
       - uses: actions/upload-artifact@v4
         with:

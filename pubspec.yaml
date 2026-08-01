@@ -21,6 +21,8 @@ dependencies:
   url_launcher: ^6.3.0
   app_links: ^7.0.0
   google_fonts: ^6.2.1
+  sign_in_with_apple: ^8.1.0
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

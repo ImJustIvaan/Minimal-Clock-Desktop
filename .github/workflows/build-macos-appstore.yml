@@ -12,11 +12,11 @@ name: Build & Upload Mac App Store Package
 #   2. Create an app record for com.ImJustIvaan.MimClock in App Store
 #      Connect (this can't be automated - it's a manual portal step).
 #   3. Create a "Mac App Store" provisioning profile for that App ID.
-#   4. Create/export a "3rd Party Mac Developer Application" certificate
-#      and a "3rd Party Mac Developer Installer" certificate (.p12 files).
+#   4. Create/export an "Apple Distribution" certificate and a
+#      "Mac Installer Distribution" certificate (.p12 files).
 #
 # Required secrets (Settings -> Secrets and variables -> Actions):
-#   MAS_APP_CERTIFICATE_P12_BASE64       - 3rd Party Mac Developer Application .p12, base64
+#   MAS_APP_CERTIFICATE_P12_BASE64       - Apple Distribution .p12, base64
 #   MAS_APP_CERTIFICATE_PASSWORD         - password used when exporting it
 #   MAS_INSTALLER_CERTIFICATE_P12_BASE64 - 3rd Party Mac Developer Installer .p12, base64
 #   MAS_INSTALLER_CERTIFICATE_PASSWORD   - password used when exporting it
@@ -97,7 +97,7 @@ jobs:
         run: |
           codesign --force --deep --options runtime \
             --entitlements macos/Runner/Release.entitlements \
-            --sign "3rd Party Mac Developer Application: Amit Sondhi ($APPLE_TEAM_ID)" \
+            --sign "Apple Distribution: Amit Sondhi ($APPLE_TEAM_ID)" \
             "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 

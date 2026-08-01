@@ -1,0 +1,127 @@
+name: Build & Upload Mac App Store Package
+
+# Produces a Mac-App-Store-signed .pkg and uploads it to App Store Connect
+# as a new build. This is a *separate* pipeline from build-macos.yml (which
+# produces the Developer-ID-signed, notarized DMG for direct distribution) -
+# App Store submissions use different certificates/provisioning and don't
+# go through notarization at all (Apple reviews the build itself).
+#
+# One-time setup required before this workflow can do anything useful:
+#   1. In the Apple Developer portal, enable the "Sign In with Apple"
+#      capability on the com.ImJustIvaan.MimClock App ID.
+#   2. Create an app record for com.ImJustIvaan.MimClock in App Store
+#      Connect (this can't be automated - it's a manual portal step).
+#   3. Create a "Mac App Store" provisioning profile for that App ID.
+#   4. Create/export a "3rd Party Mac Developer Application" certificate
+#      and a "3rd Party Mac Developer Installer" certificate (.p12 files).
+#
+# Required secrets (Settings -> Secrets and variables -> Actions):
+#   MAS_APP_CERTIFICATE_P12_BASE64       - 3rd Party Mac Developer Application .p12, base64
+#   MAS_APP_CERTIFICATE_PASSWORD         - password used when exporting it
+#   MAS_INSTALLER_CERTIFICATE_P12_BASE64 - 3rd Party Mac Developer Installer .p12, base64
+#   MAS_INSTALLER_CERTIFICATE_PASSWORD   - password used when exporting it
+#   MAS_PROVISIONING_PROFILE_BASE64      - the .provisionprofile file, base64
+#   MACOS_KEYCHAIN_PASSWORD              - any throwaway password for the temp CI keychain
+#   APPLE_TEAM_ID                        - 10-char Apple Developer Team ID (already used by build-macos.yml)
+#   APPLE_API_KEY_ID                     - App Store Connect API key ID (already used by build-macos.yml)
+#   APPLE_API_ISSUER_ID                  - App Store Connect API issuer ID (already used by build-macos.yml)
+#   APPLE_API_KEY_BASE64                 - the AuthKey_<KEYID>.p8 file, base64-encoded (already used by build-macos.yml)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Build macOS release (Universal)
+        run: flutter build macos --release
+
+      - name: Import distribution certificates into a temporary keychain
+        env:
+          APP_CERT_BASE64: ${{ secrets.MAS_APP_CERTIFICATE_P12_BASE64 }}
+          APP_CERT_PASSWORD: ${{ secrets.MAS_APP_CERTIFICATE_PASSWORD }}
+          INSTALLER_CERT_BASE64: ${{ secrets.MAS_INSTALLER_CERTIFICATE_P12_BASE64 }}
+          INSTALLER_CERT_PASSWORD: ${{ secrets.MAS_INSTALLER_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/mas-signing.keychain-db"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$APP_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/mas-app.p12"
+          security import "$RUNNER_TEMP/mas-app.p12" -k "$KEYCHAIN_PATH" \
+            -P "$APP_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+
+          echo "$INSTALLER_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/mas-installer.p12"
+          security import "$RUNNER_TEMP/mas-installer.p12" -k "$KEYCHAIN_PATH" \
+            -P "$INSTALLER_CERT_PASSWORD" -T /usr/bin/productbuild -T /usr/bin/security
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
+
+      - name: Install provisioning profile and embed it in the app
+        env:
+          PROFILE_BASE64: ${{ secrets.MAS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/Minimal Clock.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
+          fi
+          echo "APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/mas.provisionprofile"
+          cp "$RUNNER_TEMP/mas.provisionprofile" ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp "$RUNNER_TEMP/mas.provisionprofile" "$APP_PATH/Contents/embedded.provisionprofile"
+
+      - name: Sign app for Mac App Store
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          codesign --force --deep --options runtime \
+            --entitlements macos/Runner/Release.entitlements \
+            --sign "3rd Party Mac Developer Application: Amit Sondhi ($APPLE_TEAM_ID)" \
+            "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+      - name: Build signed .pkg installer
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          productbuild --component "$APP_PATH" /Applications \
+            --sign "3rd Party Mac Developer Installer: Amit Sondhi ($APPLE_TEAM_ID)" \
+            MinimalClock.pkg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MinimalClock-MacAppStore-pkg
+          path: MinimalClock.pkg
+
+      - name: Upload to App Store Connect
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APPLE_API_KEY_BASE64" | base64 --decode \
+            > ~/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+          xcrun altool --upload-app -f MinimalClock.pkg -t macos \
+            --apiKey "$APPLE_API_KEY_ID" --apiIssuer "$APPLE_API_ISSUER_ID"

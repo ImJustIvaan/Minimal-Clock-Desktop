@@ -82,12 +82,13 @@ def wait_for_latest_build(client, app_id):
     deadline = time.time() + POLL_TIMEOUT_SECONDS
     last_state = None
     while time.time() < deadline:
+        # The builds endpoint doesn't support filter[platform] — this app
+        # only ships on macOS, so filtering by app is sufficient.
         data = client.request(
             "GET",
             "/v1/builds",
             params={
                 "filter[app]": app_id,
-                "filter[platform]": "MAC_OS",
                 "sort": "-uploadedDate",
                 "limit": 1,
                 "fields[builds]": "version,processingState,uploadedDate",

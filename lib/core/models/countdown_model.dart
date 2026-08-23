@@ -4,6 +4,7 @@ class Countdown {
   final String title;
   final DateTime targetDate;
   final DateTime createdAt;
+  final String? category;
 
   const Countdown({
     required this.id,
@@ -11,6 +12,7 @@ class Countdown {
     required this.title,
     required this.targetDate,
     required this.createdAt,
+    this.category,
   });
 
   bool get isPast => targetDate.isBefore(DateTime.now());
@@ -21,6 +23,7 @@ class Countdown {
         title: json['title'] as String,
         targetDate: DateTime.parse(json['target_date'] as String).toLocal(),
         createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+        category: json['category'] as String?,
       );
 }
 
@@ -29,12 +32,14 @@ class CountdownFollow {
   final String userId;
   final String countdownId;
   final bool notify;
+  final bool pinned;
 
   const CountdownFollow({
     required this.id,
     required this.userId,
     required this.countdownId,
     required this.notify,
+    this.pinned = false,
   });
 
   factory CountdownFollow.fromJson(Map<String, dynamic> json) =>
@@ -43,6 +48,7 @@ class CountdownFollow {
         userId: json['user_id'] as String,
         countdownId: json['countdown_id'] as String,
         notify: json['notify'] as bool? ?? false,
+        pinned: json['pinned'] as bool? ?? false,
       );
 }
 

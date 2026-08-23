@@ -14,10 +14,10 @@ class NotificationService {
     await localNotifier.setup(appName: 'Minimal Clock');
   }
 
-  Future<void> showTimerFinished() async {
+  Future<void> showTimerFinished({String? label}) async {
     final notification = LocalNotification(
       title: 'Minimal Clock',
-      body: 'Timer Finished',
+      body: label == null || label.isEmpty ? 'Timer Finished' : '$label — Timer Finished',
     );
     await notification.show();
   }

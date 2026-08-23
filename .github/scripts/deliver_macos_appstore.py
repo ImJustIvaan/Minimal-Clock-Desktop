@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Drive a Mac App Store build the rest of the way through App Store Connect:
-wait for Apple to finish processing the latest upload, attach it to an App
-Store version, set that version's "What's New" text, and submit it for App
-Review.
+"""Wait for the most recently uploaded Mac App Store build to finish Apple's
+processing, and report its final state.
 
-Invoked by .github/workflows/deliver-macos-appstore.yml — see that file for
-the required secrets/inputs and the manual prerequisites (app record must
-already exist in App Store Connect, export compliance, API key role).
+Invoked by .github/workflows/deliver-macos-appstore.yml. Deliberately does
+not attach the build to a version or submit for review — those actions need
+an App Store Connect API key with the App Manager role, which this project's
+key doesn't have. Once this reports the build as VALID, attach it to a
+version and submit for review manually in App Store Connect.
 """
 import base64
 import os
@@ -82,8 +82,8 @@ def wait_for_latest_build(client, app_id):
     deadline = time.time() + POLL_TIMEOUT_SECONDS
     last_state = None
     while time.time() < deadline:
-        # The builds endpoint doesn't support filter[platform] — this app
-        # only ships on macOS, so filtering by app is sufficient.
+        # filter[platform] isn't a valid filter on this endpoint — the app
+        # only ships on macOS, so filtering by app id is sufficient.
         data = client.request(
             "GET",
             "/v1/builds",
@@ -110,143 +110,24 @@ def wait_for_latest_build(client, app_id):
     raise ConnectError("Timed out waiting for build processing to finish.")
 
 
-def find_or_create_version(client, app_id, version_string):
-    data = client.request(
-        "GET",
-        f"/v1/apps/{app_id}/appStoreVersions",
-        params={"filter[versionString]": version_string, "filter[platform]": "MAC_OS"},
-    )
-    versions = data.get("data", [])
-    if versions:
-        version = versions[0]
-        print(f"Using existing App Store version {version['id']} ({version_string}), "
-              f"state={version['attributes'].get('appStoreState')}")
-        return version
-
-    print(f"Creating new App Store version {version_string}...")
-    created = client.request(
-        "POST",
-        "/v1/appStoreVersions",
-        json={
-            "data": {
-                "type": "appStoreVersions",
-                "attributes": {
-                    "platform": "MAC_OS",
-                    "versionString": version_string,
-                    "releaseType": "MANUAL",
-                },
-                "relationships": {
-                    "app": {"data": {"type": "apps", "id": app_id}},
-                },
-            }
-        },
-    )
-    return created["data"]
-
-
-def attach_build(client, version_id, build_id):
-    print(f"Attaching build {build_id} to version {version_id}...")
-    client.request(
-        "PATCH",
-        f"/v1/appStoreVersions/{version_id}/relationships/build",
-        json={"data": {"type": "builds", "id": build_id}},
-    )
-
-
-def set_whats_new(client, version_id, whats_new):
-    if not whats_new:
-        return
-    data = client.request(
-        "GET",
-        f"/v1/appStoreVersions/{version_id}/appStoreVersionLocalizations",
-    )
-    localizations = data.get("data", [])
-    if not localizations:
-        print("No localizations found on this version — skipping What's New update.")
-        return
-    localization_id = localizations[0]["id"]
-    print(f"Setting What's New on localization {localization_id}...")
-    client.request(
-        "PATCH",
-        f"/v1/appStoreVersionLocalizations/{localization_id}",
-        json={
-            "data": {
-                "type": "appStoreVersionLocalizations",
-                "id": localization_id,
-                "attributes": {"whatsNew": whats_new},
-            }
-        },
-    )
-
-
-def submit_for_review(client, app_id, version_id):
-    print("Creating review submission...")
-    submission = client.request(
-        "POST",
-        "/v1/reviewSubmissions",
-        json={
-            "data": {
-                "type": "reviewSubmissions",
-                "attributes": {"platform": "MAC_OS"},
-                "relationships": {"app": {"data": {"type": "apps", "id": app_id}}},
-            }
-        },
-    )
-    submission_id = submission["data"]["id"]
-
-    print("Adding the App Store version to the review submission...")
-    client.request(
-        "POST",
-        "/v1/reviewSubmissionItems",
-        json={
-            "data": {
-                "type": "reviewSubmissionItems",
-                "relationships": {
-                    "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": submission_id}},
-                    "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}},
-                },
-            }
-        },
-    )
-
-    print("Submitting for App Review...")
-    client.request(
-        "PATCH",
-        f"/v1/reviewSubmissions/{submission_id}",
-        json={
-            "data": {
-                "type": "reviewSubmissions",
-                "id": submission_id,
-                "attributes": {"submitted": True},
-            }
-        },
-    )
-    print(f"Submitted review submission {submission_id} for App Review.")
-
-
 def main():
     key_id = env("APPLE_API_KEY_ID")
     issuer_id = env("APPLE_API_ISSUER_ID")
     key_b64 = env("APPLE_API_KEY_BASE64")
     app_id = env("APP_STORE_CONNECT_APP_ID")
-    version_string = env("VERSION_STRING")
-    whats_new = os.environ.get("WHATS_NEW", "")
 
     private_key_pem = base64.b64decode(key_b64)
     client = Client(key_id, issuer_id, private_key_pem)
 
     try:
         build = wait_for_latest_build(client, app_id)
-        version = find_or_create_version(client, app_id, version_string)
-        attach_build(client, version["id"], build["id"])
-        set_whats_new(client, version["id"], whats_new)
-        submit_for_review(client, app_id, version["id"])
     except ConnectError as e:
         print(f"\nFailed: {e}", file=sys.stderr)
-        print("Finish this submission manually in App Store Connect.", file=sys.stderr)
         sys.exit(1)
 
-    print("\nDone. The build has been submitted for App Review.")
+    print(f"\nBuild {build['id']} (version {build['attributes'].get('version')}) has finished "
+          f"processing and is ready. Attach it to a version and submit for review manually "
+          f"in App Store Connect.")
 
 
 if __name__ == "__main__":

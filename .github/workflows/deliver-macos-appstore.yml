@@ -1,51 +1,25 @@
 name: Deliver Mac App Store Build
 
-# Takes the most recently uploaded Mac App Store build (produced by
-# build-macos-appstore.yml) and pushes it the rest of the way through App
-# Store Connect: waits for Apple's processing to finish, attaches the build
-# to an App Store version, sets that version's "What's New" text, and
-# submits it for App Review.
+# Waits for the most recently uploaded Mac App Store build (produced by
+# build-macos-appstore.yml) to finish Apple's processing, and reports its
+# processing state. Does NOT attach the build to a version or submit it
+# for App Review — attaching/submitting needs an API key with the "App
+# Manager" role, which this project's key doesn't have (it only has
+# Developer, which is enough to upload and to check processing status).
+# Once processing is done, attach the build to a version and submit for
+# review manually in App Store Connect.
 #
-# This is a distinct, deliberate action from build-macos-appstore.yml
-# (which only builds + uploads) — running this actually submits the app
-# for Apple's review. Always run it with workflow_dispatch, never on push.
-#
-# One-time setup required before this can do anything:
-#   1. An app record for com.ImJustIvaan.MimClock must already exist in
-#      App Store Connect (same prerequisite as build-macos-appstore.yml).
-#   2. Export compliance: unless your build already declares
-#      ITSAppUsesNonExemptEncryption in Info.plist, App Review will bounce
-#      the submission until compliance is answered manually in App Store
-#      Connect — this workflow does not answer that question for you.
-#   3. The App Store Connect API key used here needs at least the "App
-#      Manager" role (the "Developer" role used for build-macos-appstore.yml
-#      is enough to *upload* builds, but not to create versions or submit
-#      for review).
-#
-# Required secrets (reuses the ones already set for the other macOS
-# workflows, plus one new one):
+# Required secrets (same ones already used by build-macos-appstore.yml,
+# plus one new one):
 #   APPLE_API_KEY_ID          - App Store Connect API key ID
 #   APPLE_API_ISSUER_ID       - App Store Connect API issuer ID
 #   APPLE_API_KEY_BASE64      - the AuthKey_<KEYID>.p8 file, base64-encoded
 #   APP_STORE_CONNECT_APP_ID  - the app's numeric App Store Connect ID (the
 #                               "Apple ID" shown on the app's App Information
 #                               page in App Store Connect — NOT the bundle ID)
-#
-# Apple's App Store Connect API can change shape over time; if a step here
-# starts failing with an unexpected response, the job prints the full
-# response body so you can see exactly what Apple rejected and finish the
-# submission by hand in App Store Connect.
 
 on:
   workflow_dispatch:
-    inputs:
-      version_string:
-        description: 'Marketing version to submit (e.g. 1.0.1) — must match the version of the build already uploaded'
-        required: true
-      whats_new:
-        description: "What's New text for this version"
-        required: false
-        default: 'Bug fixes and improvements.'
 
 jobs:
   deliver:
@@ -61,12 +35,10 @@ jobs:
       - name: Install dependencies
         run: pip install --quiet pyjwt cryptography requests
 
-      - name: Wait for build processing, attach to version, and submit for review
+      - name: Wait for build processing
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
           APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
           APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID }}
-          VERSION_STRING: ${{ inputs.version_string }}
-          WHATS_NEW: ${{ inputs.whats_new }}
         run: python3 .github/scripts/deliver_macos_appstore.py

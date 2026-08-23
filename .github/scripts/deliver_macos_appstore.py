@@ -77,30 +77,44 @@ class Client:
         return resp.json() if resp.text else {}
 
 
+def find_latest_macos_build(client, app_id):
+    # filter[platform] isn't a valid filter on /v1/builds, and this App Store
+    # Connect app record covers more than one platform (iOS/macOS/tvOS share
+    # one app id) — so fetch recent builds across all platforms and pick the
+    # newest one whose preReleaseVersion is actually MAC_OS.
+    data = client.request(
+        "GET",
+        "/v1/builds",
+        params={
+            "filter[app]": app_id,
+            "sort": "-uploadedDate",
+            "limit": 20,
+            "include": "preReleaseVersion",
+            "fields[builds]": "version,processingState,uploadedDate,preReleaseVersion",
+            "fields[preReleaseVersions]": "platform,version",
+        },
+    )
+    included = {item["id"]: item for item in data.get("included", [])}
+    for build in data.get("data", []):
+        prerelease_ref = build["relationships"].get("preReleaseVersion", {}).get("data")
+        prerelease = included.get(prerelease_ref["id"]) if prerelease_ref else None
+        if prerelease and prerelease["attributes"].get("platform") == "MAC_OS":
+            return build, prerelease["attributes"].get("version")
+    return None, None
+
+
 def wait_for_latest_build(client, app_id):
-    print("Waiting for the latest uploaded build to finish processing...")
+    print("Waiting for the latest uploaded macOS build to finish processing...")
     deadline = time.time() + POLL_TIMEOUT_SECONDS
     last_state = None
     while time.time() < deadline:
-        # filter[platform] isn't a valid filter on this endpoint — the app
-        # only ships on macOS, so filtering by app id is sufficient.
-        data = client.request(
-            "GET",
-            "/v1/builds",
-            params={
-                "filter[app]": app_id,
-                "sort": "-uploadedDate",
-                "limit": 1,
-                "fields[builds]": "version,processingState,uploadedDate",
-            },
-        )
-        builds = data.get("data", [])
-        if not builds:
-            raise ConnectError("No builds found for this app yet — has the upload finished?")
-        build = builds[0]
+        build, marketing_version = find_latest_macos_build(client, app_id)
+        if build is None:
+            raise ConnectError("No macOS builds found for this app yet — has the upload finished?")
         state = build["attributes"]["processingState"]
         if state != last_state:
-            print(f"  build {build['id']} (version {build['attributes'].get('version')}): {state}")
+            print(f"  build {build['id']} (marketing version {marketing_version}, "
+                  f"build {build['attributes'].get('version')}): {state}")
             last_state = state
         if state == "VALID":
             return build

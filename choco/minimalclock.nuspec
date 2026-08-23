@@ -4,7 +4,7 @@
     <id>minimalclock</id>
     <!-- Overridden at pack time by .github/workflows/publish-choco.yml (choco
          pack's version flag); this is only the fallback for manual packs. -->
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <title>Minimal Clock</title>
     <authors>ImJustIvaan</authors>
     <owners>ImJustIvaan</owners>

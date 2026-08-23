@@ -9,7 +9,7 @@ env:
   APP_NAME: minimal_clock
   APP_DISPLAY_NAME: Minimal Clock
   APP_ID: com.ImJustIvaan.MinimalClock
-  APP_VERSION: 1.0.0
+  APP_VERSION: 1.0.1
 
 jobs:
   build:

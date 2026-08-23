@@ -114,6 +114,47 @@ class _CountdownDetailScreenState
     );
   }
 
+  Future<void> _delete(String title, bool isOwner) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isOwner ? 'Delete countdown?' : 'Remove countdown?'),
+        content: Text(
+          isOwner
+              ? '"$title" will be permanently deleted for everyone following it.'
+              : '"$title" will be removed from your list.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(countdownRepositoryProvider);
+      await NotificationService.instance
+          .cancelCountdownNotification(widget.countdownId);
+      if (isOwner) {
+        await repo.deleteCountdown(widget.countdownId);
+      } else {
+        await repo.unfollow(widget.countdownId);
+      }
+      ref.invalidate(myCountdownsProvider);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.onSurface;
@@ -131,6 +172,15 @@ class _CountdownDetailScreenState
             onPressed: countdownAsync.valueOrNull == null
                 ? null
                 : () => _share(countdownAsync.value!.title),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _busy || countdownAsync.valueOrNull == null
+                ? null
+                : () => _delete(
+                      countdownAsync.value!.title,
+                      userId != null && userId == countdownAsync.value!.ownerId,
+                    ),
           ),
         ],
       ),

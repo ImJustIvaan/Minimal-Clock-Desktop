@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/countdown_provider.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/services/supabase_service.dart';
 import '../auth/auth_screen.dart';
 import 'create_countdown_screen.dart';
@@ -88,13 +89,56 @@ class _CountdownsList extends ConsumerWidget {
                 separatorBuilder: (_, __) => Divider(color: color.withValues(alpha: 0.08)),
                 itemBuilder: (context, i) {
                   final item = items[i];
-                  return CountdownTile(
-                    countdown: item.countdown,
-                    notify: item.follow.notify,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => CountdownDetailScreen(
-                          countdownId: item.countdown.id,
+                  final userId = ref.watch(countdownRepositoryProvider).currentUserId;
+                  final isOwner = userId != null && userId == item.countdown.ownerId;
+                  return Dismissible(
+                    key: ValueKey(item.countdown.id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Icon(Icons.delete_outline, color: color.withValues(alpha: 0.6)),
+                    ),
+                    confirmDismiss: (_) => showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text(isOwner ? 'Delete countdown?' : 'Remove countdown?'),
+                        content: Text(
+                          isOwner
+                              ? '"${item.countdown.title}" will be permanently deleted for everyone following it.'
+                              : '"${item.countdown.title}" will be removed from your list.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    ).then((confirmed) => confirmed ?? false),
+                    onDismissed: (_) async {
+                      final repo = ref.read(countdownRepositoryProvider);
+                      await NotificationService.instance
+                          .cancelCountdownNotification(item.countdown.id);
+                      if (isOwner) {
+                        await repo.deleteCountdown(item.countdown.id);
+                      } else {
+                        await repo.unfollow(item.countdown.id);
+                      }
+                      ref.invalidate(myCountdownsProvider);
+                    },
+                    child: CountdownTile(
+                      countdown: item.countdown,
+                      notify: item.follow.notify,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CountdownDetailScreen(
+                            countdownId: item.countdown.id,
+                          ),
                         ),
                       ),
                     ),

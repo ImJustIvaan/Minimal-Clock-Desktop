@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/timer_provider.dart';
 import 'widgets/duration_picker.dart';
-import 'widgets/timer_progress_ring.dart';
+import 'widgets/timer_list_tile.dart';
 import 'widgets/until_time_picker.dart';
 
-enum _TimerInputMode { duration, until }
+enum _TimerInputMode { duration, until, stopwatch }
 
 class TimerScreen extends ConsumerStatefulWidget {
   const TimerScreen({super.key});
@@ -17,72 +17,94 @@ class TimerScreen extends ConsumerStatefulWidget {
 
 class _TimerScreenState extends ConsumerState<TimerScreen> {
   _TimerInputMode _mode = _TimerInputMode.duration;
+  Duration _pickedDuration = Duration.zero;
   TimeOfDay _untilTime = TimeOfDay.now();
 
-  void _start(TimerNotifier notifier) {
-    if (_mode == _TimerInputMode.until) {
-      final now = DateTime.now();
-      var target = DateTime(now.year, now.month, now.day, _untilTime.hour, _untilTime.minute);
-      if (!target.isAfter(now)) {
-        target = target.add(const Duration(days: 1));
-      }
-      notifier.setDuration(target.difference(now));
+  void _add(TimersNotifier notifier) {
+    switch (_mode) {
+      case _TimerInputMode.duration:
+        if (_pickedDuration == Duration.zero) return;
+        notifier.addDurationTimer(total: _pickedDuration);
+      case _TimerInputMode.until:
+        final now = DateTime.now();
+        var target = DateTime(
+            now.year, now.month, now.day, _untilTime.hour, _untilTime.minute);
+        if (!target.isAfter(now)) target = target.add(const Duration(days: 1));
+        notifier.addDurationTimer(total: target.difference(now));
+      case _TimerInputMode.stopwatch:
+        notifier.addStopwatch();
     }
-    notifier.start();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(timerProvider);
-    final notifier = ref.read(timerProvider.notifier);
+    final timers = ref.watch(timersProvider);
+    final notifier = ref.read(timersProvider.notifier);
     final color = Theme.of(context).colorScheme.onSurface;
     final settings = ref.watch(settingsProvider).valueOrNull;
     final fontSize = settings?.clockFontSize ?? 72;
     final is24Hour = settings?.use24Hour ?? false;
-    final isIdle = state.status == TimerStatus.idle;
+    final ids = timers.keys.toList();
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          children: [
-            const Spacer(flex: 2),
-            if (isIdle) ...[
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
               _ModeToggle(
                 mode: _mode,
                 color: color,
                 onChanged: (m) => setState(() => _mode = m),
               ),
               const SizedBox(height: 24),
-            ],
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: !isIdle
-                  ? TimerProgressRing(
-                      key: const ValueKey('ring'),
-                      state: state,
-                      color: color,
-                      fontSize: fontSize,
-                    )
-                  : _mode == _TimerInputMode.duration
-                      ? DurationPicker(
-                          key: const ValueKey('picker'),
-                          onChanged: (d) => notifier.setDuration(d),
-                          initial: state.total,
-                          fontSize: fontSize,
-                        )
-                      : UntilTimePicker(
-                          key: const ValueKey('until'),
-                          initial: _untilTime,
-                          is24Hour: is24Hour,
-                          fontSize: fontSize,
-                          onChanged: (t) => setState(() => _untilTime = t),
+              if (_mode == _TimerInputMode.duration)
+                DurationPicker(
+                  onChanged: (d) => setState(() => _pickedDuration = d),
+                  initial: _pickedDuration,
+                  fontSize: (fontSize * 0.55).clamp(36.0, 72.0),
+                )
+              else if (_mode == _TimerInputMode.until)
+                UntilTimePicker(
+                  initial: _untilTime,
+                  is24Hour: is24Hour,
+                  fontSize: (fontSize * 0.55).clamp(36.0, 72.0),
+                  onChanged: (t) => setState(() => _untilTime = t),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    'Counts up from zero, and keeps running\nwhile you do other things.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: color.withValues(alpha: 0.4)),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              _CircleButton(
+                icon: Icons.add_rounded,
+                onTap: () => _add(notifier),
+                color: color,
+                size: 56,
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ids.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No timers running.',
+                          style: TextStyle(color: color.withValues(alpha: 0.3)),
                         ),
-            ),
-            const Spacer(flex: 2),
-            _Controls(state: state, notifier: notifier, color: color, onStart: () => _start(notifier)),
-            const SizedBox(height: 48),
-          ],
+                      )
+                    : ListView.builder(
+                        itemCount: ids.length,
+                        itemBuilder: (context, i) => TimerListTile(key: ValueKey(ids[i]), id: ids[i]),
+                      ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -118,6 +140,12 @@ class _ModeToggle extends StatelessWidget {
             selected: mode == _TimerInputMode.until,
             color: color,
             onTap: () => onChanged(_TimerInputMode.until),
+          ),
+          _ModeButton(
+            label: 'Stopwatch',
+            selected: mode == _TimerInputMode.stopwatch,
+            color: color,
+            onTap: () => onChanged(_TimerInputMode.stopwatch),
           ),
         ],
       ),
@@ -162,71 +190,17 @@ class _ModeButton extends StatelessWidget {
   }
 }
 
-class _Controls extends StatelessWidget {
-  final TimerState state;
-  final TimerNotifier notifier;
-  final Color color;
-  final VoidCallback onStart;
-
-  const _Controls({required this.state, required this.notifier, required this.color, required this.onStart});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (state.status != TimerStatus.idle) ...[
-          _CircleButton(
-            icon: Icons.refresh_rounded,
-            onTap: notifier.reset,
-            color: color.withValues(alpha: 0.3),
-            size: 56,
-          ),
-          const SizedBox(width: 24),
-        ],
-        _CircleButton(
-          icon: _primaryIcon(state.status),
-          onTap: () => _primaryAction(state.status, notifier),
-          color: color,
-          size: 72,
-          iconColor: Theme.of(context).colorScheme.surface,
-        ),
-      ],
-    );
-  }
-
-  IconData _primaryIcon(TimerStatus s) {
-    switch (s) {
-      case TimerStatus.running:  return Icons.pause_rounded;
-      case TimerStatus.paused:   return Icons.play_arrow_rounded;
-      case TimerStatus.finished: return Icons.refresh_rounded;
-      case TimerStatus.idle:     return Icons.play_arrow_rounded;
-    }
-  }
-
-  void _primaryAction(TimerStatus s, TimerNotifier n) {
-    switch (s) {
-      case TimerStatus.idle:     onStart();
-      case TimerStatus.running:  n.pause();
-      case TimerStatus.paused:   n.resume();
-      case TimerStatus.finished: n.reset();
-    }
-  }
-}
-
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color color;
   final double size;
-  final Color? iconColor;
 
   const _CircleButton({
     required this.icon,
     required this.onTap,
     required this.color,
     required this.size,
-    this.iconColor,
   });
 
   @override
@@ -239,7 +213,7 @@ class _CircleButton extends StatelessWidget {
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         child: Icon(
           icon,
-          color: iconColor ?? Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surface,
           size: size * 0.45,
         ),
       ),

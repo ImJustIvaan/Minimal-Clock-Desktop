@@ -17,13 +17,17 @@ String formatRemaining(Duration d) {
 class CountdownTile extends StatefulWidget {
   final Countdown countdown;
   final bool notify;
+  final bool pinned;
   final VoidCallback onTap;
+  final VoidCallback? onTogglePin;
 
   const CountdownTile({
     super.key,
     required this.countdown,
     required this.notify,
+    this.pinned = false,
     required this.onTap,
+    this.onTogglePin,
   });
 
   @override
@@ -61,13 +65,35 @@ class _CountdownTileState extends State<CountdownTile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.countdown.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: color,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.countdown.title,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                      if (widget.countdown.category != null &&
+                          widget.countdown.category!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: color.withValues(alpha: 0.15)),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            widget.countdown.category!,
+                            style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.45)),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -81,6 +107,19 @@ class _CountdownTileState extends State<CountdownTile> {
                 ],
               ),
             ),
+            if (widget.onTogglePin != null)
+              GestureDetector(
+                onTap: widget.onTogglePin,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    widget.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    size: 18,
+                    color: widget.pinned ? color.withValues(alpha: 0.8) : color.withValues(alpha: 0.25),
+                  ),
+                ),
+              ),
+            const SizedBox(width: 4),
             if (widget.notify)
               Icon(Icons.notifications_active_outlined,
                   size: 18, color: color.withValues(alpha: 0.4)),

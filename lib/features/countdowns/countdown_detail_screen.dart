@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/providers/countdown_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/services/notification_service.dart';
+import 'create_countdown_screen.dart';
 import 'widgets/countdown_tile.dart';
 
 const String kCountdownShareBaseUrl = 'https://time.ivaan.cc/?c=';
@@ -114,6 +115,18 @@ class _CountdownDetailScreenState
     );
   }
 
+  Future<void> _togglePin(bool pinned) async {
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(countdownRepositoryProvider);
+      await repo.setPinned(countdownId: widget.countdownId, pinned: !pinned);
+      ref.invalidate(followByCountdownIdProvider(widget.countdownId));
+      ref.invalidate(myCountdownsProvider);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _delete(String title, bool isOwner) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -164,9 +177,30 @@ class _CountdownDetailScreenState
         ref.watch(followByCountdownIdProvider(widget.countdownId));
     final userId = ref.watch(countdownRepositoryProvider).currentUserId;
 
+    final isOwnerForActions = countdownAsync.valueOrNull != null &&
+        userId != null &&
+        userId == countdownAsync.value!.ownerId;
+    final pinnedForActions = followAsync.valueOrNull?.pinned ?? false;
+
     return Scaffold(
       appBar: AppBar(
         actions: [
+          IconButton(
+            icon: Icon(pinnedForActions ? Icons.push_pin : Icons.push_pin_outlined),
+            tooltip: pinnedForActions ? 'Unpin' : 'Pin to top',
+            onPressed: _busy || countdownAsync.valueOrNull == null
+                ? null
+                : () => _togglePin(pinnedForActions),
+          ),
+          if (isOwnerForActions)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CreateCountdownScreen(existing: countdownAsync.value),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.ios_share),
             onPressed: countdownAsync.valueOrNull == null
@@ -233,6 +267,20 @@ class _CountdownDetailScreenState
                     '${countdown.targetDate.month}/${countdown.targetDate.day}/${countdown.targetDate.year}',
                     style: TextStyle(fontSize: 14, color: color.withValues(alpha: 0.4)),
                   ),
+                  if (countdown.category != null && countdown.category!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: color.withValues(alpha: 0.2)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        countdown.category!,
+                        style: TextStyle(fontSize: 11, letterSpacing: 0.5, color: color.withValues(alpha: 0.6)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 40),
                   GestureDetector(
                     onTap: _busy ? null : () => _toggleNotify(isOwner),
